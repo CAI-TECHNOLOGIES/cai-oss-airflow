@@ -37,9 +37,8 @@ environment variables like ``AWS_ACCESS_KEY_ID``, ``AWS_SECRET_ACCESS_KEY``.
 Storing and Retrieving Connections
 """"""""""""""""""""""""""""""""""
 You can store the different values for a secret in two forms: storing the conn URI in one field (default mode) or using different
-fields in Amazon Secrets Manager (setting ``full_url_mode`` as ``false`` in the backend config), as follows:
-
-.. image:: /img/aws-secrets-manager.png
+fields in Amazon Secrets Manager (setting ``full_url_mode`` as ``false`` in the backend config), as follow:
+.. image:: img/aws-secrets-manager.png
 
 By default you must use some of the following words for each kind of field:
 
@@ -105,7 +104,7 @@ For example, if you want to set parameter ``connections_prefix`` to ``"airflow/c
     backend = airflow.providers.amazon.aws.secrets.secrets_manager.SecretsManagerBackend
     backend_kwargs = {"connections_prefix": "airflow/connections", "variables_prefix": null, "profile_name": "default"}
 
-Example of storing Google Secrets in AWS Secrets Manager
+Example of storing Google Secrets in AWS Secrets Manger
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""
 For connecting to a google cloud conn, all the fields must be in the extra field, and their names follow the pattern
 ``extra_google_cloud_platform__value``. For example:

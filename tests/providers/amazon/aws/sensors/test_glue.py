@@ -19,20 +19,20 @@ import unittest
 from unittest import mock
 
 from airflow import configuration
-from airflow.providers.amazon.aws.hooks.glue import GlueJobHook
-from airflow.providers.amazon.aws.sensors.glue import GlueJobSensor
+from airflow.providers.amazon.aws.hooks.glue import AwsGlueJobHook
+from airflow.providers.amazon.aws.sensors.glue import AwsGlueJobSensor
 
 
-class TestGlueJobSensor(unittest.TestCase):
+class TestAwsGlueJobSensor(unittest.TestCase):
     def setUp(self):
         configuration.load_test_config()
 
-    @mock.patch.object(GlueJobHook, 'get_conn')
-    @mock.patch.object(GlueJobHook, 'get_job_state')
+    @mock.patch.object(AwsGlueJobHook, 'get_conn')
+    @mock.patch.object(AwsGlueJobHook, 'get_job_state')
     def test_poke(self, mock_get_job_state, mock_conn):
         mock_conn.return_value.get_job_run()
         mock_get_job_state.return_value = 'SUCCEEDED'
-        op = GlueJobSensor(
+        op = AwsGlueJobSensor(
             task_id='test_glue_job_sensor',
             job_name='aws_test_glue_job',
             run_id='5152fgsfsjhsh61661',
@@ -40,14 +40,14 @@ class TestGlueJobSensor(unittest.TestCase):
             timeout=5,
             aws_conn_id='aws_default',
         )
-        assert op.poke({})
+        assert op.poke(None)
 
-    @mock.patch.object(GlueJobHook, 'get_conn')
-    @mock.patch.object(GlueJobHook, 'get_job_state')
+    @mock.patch.object(AwsGlueJobHook, 'get_conn')
+    @mock.patch.object(AwsGlueJobHook, 'get_job_state')
     def test_poke_false(self, mock_get_job_state, mock_conn):
         mock_conn.return_value.get_job_run()
         mock_get_job_state.return_value = 'RUNNING'
-        op = GlueJobSensor(
+        op = AwsGlueJobSensor(
             task_id='test_glue_job_sensor',
             job_name='aws_test_glue_job',
             run_id='5152fgsfsjhsh61661',
@@ -55,7 +55,7 @@ class TestGlueJobSensor(unittest.TestCase):
             timeout=5,
             aws_conn_id='aws_default',
         )
-        assert not op.poke({})
+        assert not op.poke(None)
 
 
 if __name__ == '__main__':

@@ -19,7 +19,7 @@
 
 import unittest
 
-from airflow.providers.amazon.aws.hooks.sns import SnsHook
+from airflow.providers.amazon.aws.hooks.sns import AwsSnsHook
 
 try:
     from moto import mock_sns
@@ -28,15 +28,15 @@ except ImportError:
 
 
 @unittest.skipIf(mock_sns is None, 'moto package not present')
-class TestSnsHook(unittest.TestCase):
+class TestAwsSnsHook(unittest.TestCase):
     @mock_sns
     def test_get_conn_returns_a_boto3_connection(self):
-        hook = SnsHook(aws_conn_id='aws_default')
+        hook = AwsSnsHook(aws_conn_id='aws_default')
         assert hook.get_conn() is not None
 
     @mock_sns
     def test_publish_to_target_with_subject(self):
-        hook = SnsHook(aws_conn_id='aws_default')
+        hook = AwsSnsHook(aws_conn_id='aws_default')
 
         message = "Hello world"
         topic_name = "test-topic"
@@ -49,7 +49,7 @@ class TestSnsHook(unittest.TestCase):
 
     @mock_sns
     def test_publish_to_target_with_attributes(self):
-        hook = SnsHook(aws_conn_id='aws_default')
+        hook = AwsSnsHook(aws_conn_id='aws_default')
 
         message = "Hello world"
         topic_name = "test-topic"
@@ -70,7 +70,7 @@ class TestSnsHook(unittest.TestCase):
 
     @mock_sns
     def test_publish_to_target_plain(self):
-        hook = SnsHook(aws_conn_id='aws_default')
+        hook = AwsSnsHook(aws_conn_id='aws_default')
 
         message = "Hello world"
         topic_name = "test-topic"

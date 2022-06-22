@@ -200,7 +200,7 @@ rm -rf ${AIRFLOW_REPO_ROOT}/dist/*
 ./breeze prepare-provider-packages --version-suffix-for-pypi rc1 --package-format both
 ```
 
-if you only build few packages, run:
+if you ony build few packages, run:
 
 ```shell script
 ./breeze prepare-provider-packages --version-suffix-for-pypi rc1 --package-format both \

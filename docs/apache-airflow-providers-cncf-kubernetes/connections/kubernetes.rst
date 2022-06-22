@@ -56,7 +56,7 @@ Kube config (JSON format)
   that used to connect to Kubernetes client.
 
 Namespace
-  Default Kubernetes namespace for the connection.
+  Default kubernetes namespace for the connection.
 
 When specifying the connection in environment variable you should specify
 it using URI syntax.

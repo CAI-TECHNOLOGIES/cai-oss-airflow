@@ -24,9 +24,7 @@ import traceback
 from os import path
 
 from docutils import nodes
-
-# No stub exists for docutils.parsers.rst.directives. See https://github.com/python/typeshed/issues/5755.
-from docutils.parsers.rst import directives  # type: ignore[attr-defined]
+from docutils.parsers.rst import directives
 from sphinx.directives.code import LiteralIncludeReader
 from sphinx.ext.viewcode import viewcode_anchor
 from sphinx.locale import _

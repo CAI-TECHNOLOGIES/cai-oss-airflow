@@ -253,7 +253,7 @@ function breeze::initialize_virtualenv() {
         echo
         echo "This will wipe out ${AIRFLOW_HOME_DIR} and reset all the databases!"
         echo
-        "${AIRFLOW_SOURCES}/scripts/tools/confirm" "Proceeding with the initialization"
+        "${AIRFLOW_SOURCES}/confirm" "Proceeding with the initialization"
         echo
         pushd "${AIRFLOW_SOURCES}" >/dev/null 2>&1 || exit 1
         set +e
@@ -329,7 +329,7 @@ function breeze::initialize_virtualenv() {
 function breeze::setup_autocomplete() {
     echo "Installing bash/zsh completion for local user"
     echo
-    "${AIRFLOW_SOURCES}/scripts/tools/confirm" "This will create ~/.bash_completion.d/ directory and modify ~/.*rc files"
+    "${AIRFLOW_SOURCES}/confirm" "This will create ~/.bash_completion.d/ directory and modify ~/.*rc files"
     echo
     echo
     mkdir -pv ~/.bash_completion.d
@@ -499,7 +499,6 @@ EOF
 
                                Branch name:            ${BRANCH_NAME}
                                Docker image:           ${AIRFLOW_PROD_IMAGE}
-                               Platform:               ${PLATFORM}
                                Airflow source version: $(build_images::get_airflow_version_from_production_image)
 EOF
         else
@@ -509,7 +508,6 @@ EOF
 
                                Branch name:            ${BRANCH_NAME}
                                Docker image:           ${AIRFLOW_CI_IMAGE_WITH_TAG}
-                               Platform:               ${PLATFORM}
                                Airflow source version: ${AIRFLOW_VERSION}
 EOF
         fi
@@ -532,7 +530,6 @@ EOF
 
    Branch name:             ${BRANCH_NAME}
    Docker image:            ${AIRFLOW_PROD_IMAGE}
-   Platform:                ${PLATFORM}
 EOF
         else
             cat <<EOF
@@ -541,7 +538,6 @@ EOF
 
    Branch name:             ${BRANCH_NAME}
    Docker image:            ${AIRFLOW_CI_IMAGE}
-   Platform:                ${PLATFORM}
 
 EOF
         fi
@@ -632,7 +628,6 @@ export PYTHON_MAJOR_MINOR_VERSION="${PYTHON_MAJOR_MINOR_VERSION}"
 export BACKEND="${BACKEND}"
 export AIRFLOW_VERSION="${AIRFLOW_VERSION}"
 export INSTALL_AIRFLOW_VERSION="${INSTALL_AIRFLOW_VERSION}"
-export PLATFORM="${PLATFORM}"
 export SSH_PORT="${SSH_PORT}"
 export WEBSERVER_HOST_PORT="${WEBSERVER_HOST_PORT}"
 export FLOWER_HOST_PORT="${FLOWER_HOST_PORT}"
@@ -641,8 +636,6 @@ export POSTGRES_HOST_PORT="${POSTGRES_HOST_PORT}"
 export POSTGRES_VERSION="${POSTGRES_VERSION}"
 export MYSQL_HOST_PORT="${MYSQL_HOST_PORT}"
 export MYSQL_VERSION="${MYSQL_VERSION}"
-export MSSQL_HOST_PORT="${MSSQL_HOST_PORT}"
-export MSSQL_VERSION="${MSSQL_VERSION}"
 export AIRFLOW_SOURCES="${AIRFLOW_SOURCES}"
 export AIRFLOW_CI_IMAGE="${AIRFLOW_CI_IMAGE}"
 export AIRFLOW_CI_IMAGE_WITH_TAG="${AIRFLOW_CI_IMAGE_WITH_TAG}"
@@ -819,12 +812,6 @@ function breeze::parse_arguments() {
         -b | --backend)
             export BACKEND="${2}"
             echo "Backend: ${BACKEND}"
-            echo
-            shift 2
-            ;;
-        ---platform)
-            export PLATFORM="${2}"
-            echo "Backend: ${PLATFORM}"
             echo
             shift 2
             ;;
@@ -1108,11 +1095,6 @@ function breeze::parse_arguments() {
             echo "Install MsSQL client: ${INSTALL_MSSQL_CLIENT}"
             shift
             ;;
-        --disable-postgres-client-installation)
-            export INSTALL_POSTGRES_CLIENT="false"
-            echo "Install Postgres client: ${INSTALL_POSTGRES_CLIENT}"
-            shift
-            ;;
         --constraints-location)
             export AIRFLOW_CONSTRAINTS_LOCATION="${2}"
             echo "Constraints location: ${AIRFLOW_CONSTRAINTS_LOCATION}"
@@ -1135,7 +1117,7 @@ function breeze::parse_arguments() {
             shift 2
             ;;
         -f | --forward-credentials)
-            echo "Forwarding credentials. Be careful as your credentials are available in the container!"
+            echo "Forwarding credentials. Be careful as your credentials ar available in the container!"
             echo
             export FORWARD_CREDENTIALS="true"
             shift
@@ -1158,6 +1140,7 @@ function breeze::parse_arguments() {
             echo "behaviour as in the CI environment."
             echo
             export GITHUB_REGISTRY_PULL_IMAGE_TAG="${2}"
+            export GITHUB_REGISTRY_PUSH_IMAGE_TAG="${2}"
             export CHECK_IMAGE_FOR_REBUILD="false"
             export SKIP_BUILDING_PROD_IMAGE="true"
             export SKIP_CHECK_REMOTE_IMAGE="true"
@@ -1547,10 +1530,6 @@ function breeze::prepare_formatted_versions() {
     FORMATTED_BACKENDS=$(echo "${_breeze_allowed_backends=""}" | tr '\n' ' ' |
         fold -w "${indented_screen_width}" -s | sed "s/^/${list_prefix}/")
     readonly FORMATTED_BACKENDS
-
-    FORMATTED_PLATFORMS=$(echo "${_breeze_allowed_platforms=""}" |
-        tr '\n' ' ' | fold -w "${indented_screen_width}" -s | sed "s/^/${list_prefix}/")
-    readonly FORMATTED_PLATFORMS
 
     FORMATTED_STATIC_CHECKS=$(echo "${_breeze_allowed_static_checks=""}" | tr '\n' ' ' |
         fold -w "${indented_screen_width}" -s | sed "s/^/${list_prefix}/")
@@ -2252,14 +2231,6 @@ function breeze::flag_airflow_variants() {
         One of:
 
 ${FORMATTED_PYTHON_MAJOR_MINOR_VERSIONS}
-
---platform PLATFORM
-        Builds image for the platform specified.
-
-        One of:
-
-${FORMATTED_PLATFORMS}
-
 "
 }
 
@@ -2450,7 +2421,7 @@ ${FORMATTED_INSTALL_AIRFLOW_VERSIONS}
 
 -t, --install-airflow-reference INSTALL_AIRFLOW_REFERENCE
         Installs Airflow directly from reference in GitHub when building PROD image.
-        This can be a GitHub branch like main or v2-2-test, or a tag like 2.2.0rc1.
+        This can be a GitHub branch like main or v2-1-test, or a tag like 2.1.0a1.
 
 --installation-method INSTALLATION_METHOD
         Method of installing Airflow in PROD image - either from the sources ('.')
@@ -3100,21 +3071,16 @@ function breeze::check_and_save_all_params() {
             export BRANCH_NAME="v2-0-test"
         elif [[ ${INSTALL_AIRFLOW_REFERENCE=} == *2_1* ]]; then
             export BRANCH_NAME="v2-1-test"
-        elif [[ ${INSTALL_AIRFLOW_REFERENCE=} == *2_2* ]]; then
-            export BRANCH_NAME="v2-2-test"
         fi
     elif [[ -n "${INSTALL_AIRFLOW_VERSION=}" ]]; then
         if [[ ${INSTALL_AIRFLOW_VERSION=} == *2.0* ]]; then
             export BRANCH_NAME="v2-0-test"
         elif [[ ${INSTALL_AIRFLOW_VERSION=} == *2.1* ]]; then
             export BRANCH_NAME="v2-1-test"
-        elif [[ ${INSTALL_AIRFLOW_VERSION=} == *2.2* ]]; then
-            export BRANCH_NAME="v2-2-test"
         fi
     fi
 
     parameters::check_and_save_allowed_param "BACKEND" "backend" "--backend"
-    parameters::check_and_save_allowed_param "PLATFORM" "platform" "--platform"
     parameters::check_and_save_allowed_param "KUBERNETES_MODE" "Kubernetes mode" "--kubernetes-mode"
     parameters::check_and_save_allowed_param "KUBERNETES_VERSION" "Kubernetes version" "--kubernetes-version"
     parameters::check_and_save_allowed_param "KIND_VERSION" "KinD version" "--kind-version"
@@ -3616,8 +3582,6 @@ breeze::read_saved_environment_variables
 
 initialization::initialize_common_environment
 
-initialization::check_docker_version
-
 initialization::get_environment_for_builds_on_ci
 
 breeze::determine_python_version_to_use_in_breeze
@@ -3632,6 +3596,8 @@ set +u
 breeze::parse_arguments "${@}"
 
 breeze::print_header_line
+
+build_images::forget_last_answer
 
 breeze::check_and_save_all_params
 

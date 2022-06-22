@@ -42,8 +42,8 @@ from pathlib import Path
 from shutil import copyfile
 from typing import Any, Dict, Iterable, List, NamedTuple, Optional, Set, Tuple, Type, Union
 
+import click
 import jsonschema
-import rich_click as click
 from github import Github, Issue, PullRequest, UnknownObjectException
 from packaging.version import Version
 from rich.console import Console
@@ -52,7 +52,7 @@ from rich.syntax import Syntax
 
 from airflow.utils.yaml import safe_load
 
-ALL_PYTHON_VERSIONS = ["3.7", "3.8", "3.9"]
+ALL_PYTHON_VERSIONS = ["3.6", "3.7", "3.8", "3.9"]
 
 INITIAL_CHANGELOG_CONTENT = """
 
@@ -1974,14 +1974,10 @@ def build_provider_packages(
     try:
         provider_package_id = package_id
         with with_group(f"Prepare provider package for '{provider_package_id}'"):
-            if version_suffix.startswith("rc") or version_suffix == "":
-                # For RC and official releases we check if the "officially released" version exists
-                # and skip the released if it was. This allows to skip packages that have not been
-                # marked for release. For "dev" suffixes, we always build all packages
-                released_tag = get_current_tag(provider_package_id, "", git_update, verbose)
-                if tag_exists_for_version(provider_package_id, released_tag, verbose):
-                    console.print(f"[yellow]The tag {released_tag} exists. Skipping the package.[/]")
-                    return False
+            current_tag = get_current_tag(provider_package_id, version_suffix, git_update, verbose)
+            if tag_exists_for_version(provider_package_id, current_tag, verbose):
+                console.print(f"[yellow]The tag {current_tag} exists. Skipping the package.[/]")
+                return False
             console.print(f"Changing directory to ${TARGET_PROVIDER_PACKAGES_PATH}")
             os.chdir(TARGET_PROVIDER_PACKAGES_PATH)
             cleanup_remnants(verbose)
@@ -2169,11 +2165,6 @@ KNOWN_DEPRECATED_DIRECT_IMPORTS: Set[str] = {
     "This module is deprecated. Please use `airflow.providers.tableau.hooks.tableau`.",
     "This module is deprecated. Please use `kubernetes.client.models.V1Volume`.",
     "This module is deprecated. Please use `kubernetes.client.models.V1VolumeMount`.",
-    (
-        "This module is deprecated. Please use `kubernetes.client.models.V1ResourceRequirements`"
-        " and `kubernetes.client.models.V1ContainerPort`."
-    ),
-    "This module is deprecated. Please use `kubernetes.client.models.V1EnvVar`.",
     'numpy.ufunc size changed, may indicate binary incompatibility. Expected 192 from C header,'
     ' got 216 from PyObject',
     "This module is deprecated. Please use `airflow.providers.amazon.aws.sensors.step_function`.",

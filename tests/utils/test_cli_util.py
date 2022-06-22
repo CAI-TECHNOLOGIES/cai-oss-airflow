@@ -176,11 +176,11 @@ def fail_action_logger_callback():
     cli_action_loggers.__pre_exec_callbacks = tmp
 
 
-@cli.action_cli(check_db=False)
+@cli.action_logging
 def fail_func(_):
     raise NotImplementedError
 
 
-@cli.action_cli(check_db=False)
+@cli.action_logging
 def success_func(_):
     pass

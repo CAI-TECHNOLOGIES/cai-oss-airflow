@@ -22,7 +22,7 @@ This file should only contain constants used for the EKS tests.
 """
 import re
 from enum import Enum
-from typing import Any, Dict, List, Pattern, Tuple
+from typing import Dict, List, Pattern, Tuple
 
 DEFAULT_CONN_ID: str = "aws_default"
 DEFAULT_NAMESPACE: str = "default_namespace"
@@ -31,8 +31,6 @@ FROZEN_TIME: str = "2013-11-27T01:42:00Z"
 MAX_FARGATE_LABELS: int = 5
 PACKAGE_NOT_PRESENT_MSG: str = "mock_eks package not present"
 PARTITION: str = "aws"
-NODEGROUP_OWNERSHIP_TAG_KEY = "kubernetes.io/cluster/{cluster_name}"
-NODEGROUP_OWNERSHIP_TAG_DEFAULT_VALUE = "owned"
 NON_EXISTING_CLUSTER_NAME: str = "non_existing_cluster"
 NON_EXISTING_FARGATE_PROFILE_NAME: str = "non_existing_fargate_profile"
 NON_EXISTING_NODEGROUP_NAME: str = "non_existing_nodegroup"
@@ -78,28 +76,28 @@ VERSION: Tuple[str, str] = ("version", "1")
 class ResponseAttributes:
     """Key names for the dictionaries returned by API calls."""
 
-    CLUSTER = "cluster"
-    CLUSTERS = "clusters"
-    FARGATE_PROFILE_NAMES = "fargateProfileNames"
-    FARGATE_PROFILE = "fargateProfile"
-    NEXT_TOKEN = "nextToken"
-    NODEGROUP = "nodegroup"
-    NODEGROUPS = "nodegroups"
+    CLUSTER: slice = "cluster"
+    CLUSTERS: slice = "clusters"
+    FARGATE_PROFILE_NAMES: slice = "fargateProfileNames"
+    FARGATE_PROFILE: slice = "fargateProfile"
+    NEXT_TOKEN: slice = "nextToken"
+    NODEGROUP: slice = "nodegroup"
+    NODEGROUPS: slice = "nodegroups"
 
 
 class ErrorAttributes:
     """Key names for the dictionaries representing error messages."""
 
-    CODE = "Code"
-    ERROR = "Error"
-    MESSAGE = "Message"
+    CODE: slice = "Code"
+    ERROR: slice = "Error"
+    MESSAGE: slice = "Message"
 
 
 class ClusterInputs:
     """All possible inputs for creating an EKS Cluster."""
 
-    REQUIRED: List[Tuple[str, Any]] = [ROLE_ARN, RESOURCES_VPC_CONFIG]
-    OPTIONAL: List[Tuple[str, Any]] = [
+    REQUIRED: List[Tuple] = [ROLE_ARN, RESOURCES_VPC_CONFIG]
+    OPTIONAL: List[Tuple] = [
         CLIENT_REQUEST_TOKEN,
         ENCRYPTION_CONFIG,
         LOGGING,
@@ -110,17 +108,15 @@ class ClusterInputs:
 
 
 class FargateProfileInputs:
-    """All possible inputs for creating an AWS Fargate profile."""
-
-    REQUIRED: List[Tuple[str, Any]] = [POD_EXECUTION_ROLE_ARN, SELECTORS]
-    OPTIONAL: List[Tuple[str, Any]] = [SUBNETS, TAGS]
+    REQUIRED: List[Tuple] = [POD_EXECUTION_ROLE_ARN, SELECTORS]
+    OPTIONAL: List[Tuple] = [SUBNETS, TAGS]
 
 
 class NodegroupInputs:
     """All possible inputs for creating an EKS Managed Nodegroup."""
 
-    REQUIRED: List[Tuple[str, Any]] = [NODEROLE_ARN, SUBNETS]
-    OPTIONAL: List[Tuple[str, Any]] = [
+    REQUIRED: List[Tuple] = [NODEROLE_ARN, SUBNETS]
+    OPTIONAL: List[Tuple] = [
         AMI_TYPE,
         DISK_SIZE,
         INSTANCE_TYPES,
@@ -141,37 +137,37 @@ class PossibleTestResults(Enum):
 class ClusterAttributes:
     """Key names for the dictionaries representing EKS Clusters."""
 
-    ARN = "arn"
-    CLUSTER_NAME = "clusterName"
-    CREATED_AT = "createdAt"
-    ENDPOINT = "endpoint"
-    IDENTITY = "identity"
-    ISSUER = "issuer"
-    NAME = "name"
-    OIDC = "oidc"
+    ARN: slice = "arn"
+    CLUSTER_NAME: slice = "clusterName"
+    CREATED_AT: slice = "createdAt"
+    ENDPOINT: slice = "endpoint"
+    IDENTITY: slice = "identity"
+    ISSUER: slice = "issuer"
+    NAME: slice = "name"
+    OIDC: slice = "oidc"
 
 
 class FargateProfileAttributes:
-    ARN = "fargateProfileArn"
-    CREATED_AT = "createdAt"
-    FARGATE_PROFILE_NAME = "fargateProfileName"
-    LABELS = "labels"
-    NAMESPACE = "namespace"
-    SELECTORS = "selectors"
+    ARN: slice = "fargateProfileArn"
+    CREATED_AT: slice = "createdAt"
+    FARGATE_PROFILE_NAME: slice = "fargateProfileName"
+    LABELS: slice = "labels"
+    NAMESPACE: slice = "namespace"
+    SELECTORS: slice = "selectors"
 
 
 class NodegroupAttributes:
     """Key names for the dictionaries representing EKS Managed Nodegroups."""
 
-    ARN = "nodegroupArn"
-    AUTOSCALING_GROUPS = "autoScalingGroups"
-    CREATED_AT = "createdAt"
-    MODIFIED_AT = "modifiedAt"
-    NAME = "name"
-    NODEGROUP_NAME = "nodegroupName"
-    REMOTE_ACCESS_SG = "remoteAccessSecurityGroup"
-    RESOURCES = "resources"
-    TAGS = "tags"
+    ARN: slice = "nodegroupArn"
+    AUTOSCALING_GROUPS: slice = "autoScalingGroups"
+    CREATED_AT: slice = "createdAt"
+    MODIFIED_AT: slice = "modifiedAt"
+    NAME: slice = "name"
+    NODEGROUP_NAME: slice = "nodegroupName"
+    REMOTE_ACCESS_SG: slice = "remoteAccessSecurityGroup"
+    RESOURCES: slice = "resources"
+    TAGS: slice = "tags"
 
 
 class BatchCountSize:
@@ -191,10 +187,10 @@ class PageCount:
 
 
 FARGATE_PROFILE_UUID_PATTERN: str = (
-    r"(?P<fargate_uuid>[-0-9a-z]{8}-[-0-9a-z]{4}-[-0-9a-z]{4}-[-0-9a-z]{4}-[-0-9a-z]{12})"
+    "(?P<fargate_uuid>[-0-9a-z]{8}-[-0-9a-z]{4}-[-0-9a-z]{4}-[-0-9a-z]{4}-[-0-9a-z]{12})"
 )
 NODEGROUP_UUID_PATTERN: str = (
-    r"(?P<nodegroup_uuid>[-0-9a-z]{8}-[-0-9a-z]{4}-[-0-9a-z]{4}-[-0-9a-z]{4}-[-0-9a-z]{12})"
+    "(?P<nodegroup_uuid>[-0-9a-z]{8}-[-0-9a-z]{4}-[-0-9a-z]{4}-[-0-9a-z]{4}-[-0-9a-z]{12})"
 )
 
 
@@ -202,41 +198,38 @@ class RegExTemplates:
     """The compiled RegEx patterns used in testing."""
 
     CLUSTER_ARN: Pattern = re.compile(
-        r"""arn:
-        (?P<partition>.+):
-        eks:
-        (?P<region>[-0-9a-zA-Z]+):
-        (?P<account_id>[0-9]{12}):
-        cluster/
-        (?P<cluster_name>.+)""",
-        re.VERBOSE,
+        "arn:"
+        + "(?P<partition>.+):"
+        + "eks:"
+        + "(?P<region>[-0-9a-zA-Z]+):"
+        + "(?P<account_id>[0-9]{12}):"
+        + "cluster/"
+        + "(?P<cluster_name>.+)"
     )
     FARGATE_PROFILE_ARN: Pattern = re.compile(
-        r"""arn:
-        (?P<partition>.+):
-        eks:
-        (?P<region>[-0-9a-zA-Z]+):
-        (?P<account_id>[0-9]{12}):
-        fargateprofile/
-        (?P<cluster_name>.+)/
-        (?P<fargate_name>.+)/"""
-        + FARGATE_PROFILE_UUID_PATTERN,
-        re.VERBOSE,
+        "arn:"
+        + "(?P<partition>.+):"
+        + "eks:"
+        + "(?P<region>[-0-9a-zA-Z]+):"
+        + "(?P<account_id>[0-9]{12}):"
+        + "fargateprofile/"
+        + "(?P<cluster_name>.+)/"
+        + "(?P<fargate_name>.+)/"
+        + FARGATE_PROFILE_UUID_PATTERN
     )
     NODEGROUP_ARN: Pattern = re.compile(
-        r"""arn:
-        (?P<partition>.+):
-        eks:
-        (?P<region>[-0-9a-zA-Z]+):
-        (?P<account_id>[0-9]{12}):
-        nodegroup/
-        (?P<cluster_name>.+)/
-        (?P<nodegroup_name>.+)/"""
-        + NODEGROUP_UUID_PATTERN,
-        re.VERBOSE,
+        "arn:"
+        + "(?P<partition>.+):"
+        + "eks:"
+        + "(?P<region>[-0-9a-zA-Z]+):"
+        + "(?P<account_id>[0-9]{12}):"
+        + "nodegroup/"
+        + "(?P<cluster_name>.+)/"
+        + "(?P<nodegroup_name>.+)/"
+        + NODEGROUP_UUID_PATTERN
     )
-    NODEGROUP_ASG_NAME_PATTERN: Pattern = re.compile(f"eks-{NODEGROUP_UUID_PATTERN}")
-    NODEGROUP_SECURITY_GROUP_NAME_PATTERN: Pattern = re.compile(r"sg-([-0-9a-z]{17})")
+    NODEGROUP_ASG_NAME_PATTERN: Pattern = re.compile("eks-" + NODEGROUP_UUID_PATTERN)
+    NODEGROUP_SECURITY_GROUP_NAME_PATTERN: Pattern = re.compile("sg-" + "([-0-9a-z]{17})")
 
 
 class MethodNames:

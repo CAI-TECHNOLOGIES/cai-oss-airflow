@@ -407,7 +407,7 @@ exit 0
             op.run(start_date=DEFAULT_DATE, end_date=DEFAULT_DATE, ignore_ti_state=True)
 
 
-def test_external_task_sensor_templated(dag_maker, app):
+def test_external_task_sensor_templated(dag_maker):
     with dag_maker():
         ExternalTaskSensor(
             task_id='templated_task',
@@ -421,13 +421,6 @@ def test_external_task_sensor_templated(dag_maker, app):
 
     assert instance.task.external_dag_id == f"dag_{DEFAULT_DATE.date()}"
     assert instance.task.external_task_id == f"task_{DEFAULT_DATE.date()}"
-
-    # Verify that the operator link uses the rendered value of ``external_dag_id``.
-    app.config['SERVER_NAME'] = ""
-    with app.app_context():
-        url = instance.task.get_extra_links(DEFAULT_DATE, "External DAG")
-
-        assert f"tree?dag_id=dag_{DEFAULT_DATE.date()}" in url
 
 
 class TestExternalTaskMarker(unittest.TestCase):
@@ -757,7 +750,7 @@ def dag_bag_cyclic():
                 )
                 task_a >> task_b
 
-        # Create the last dag which loops back
+        # Create the last dag wich loops back
         with DAG(f"dag_{depth}", start_date=DEFAULT_DATE, schedule_interval=None) as dag:
             dags.append(dag)
             task_a = ExternalTaskSensor(
@@ -829,8 +822,8 @@ def dag_bag_multiple():
 
     daily_task = DummyOperator(task_id="daily_tas", dag=daily_dag)
 
-    begin = DummyOperator(task_id="begin", dag=agg_dag)
-    for i in range(8):
+    start = DummyOperator(task_id="start", dag=agg_dag)
+    for i in range(25):
         task = ExternalTaskMarker(
             task_id=f"{daily_task.task_id}_{i}",
             external_dag_id=daily_dag.dag_id,
@@ -838,25 +831,30 @@ def dag_bag_multiple():
             execution_date="{{ macros.ds_add(ds, -1 * %s) }}" % i,
             dag=agg_dag,
         )
-        begin >> task
+        start >> task
 
     yield dag_bag
 
 
+@pytest.mark.quarantined
+@pytest.mark.backend("postgres", "mysql")
 def test_clear_multiple_external_task_marker(dag_bag_multiple):
     """
     Test clearing a dag that has multiple ExternalTaskMarker.
+
+    sqlite3 parser stack size is 100 lexical items by default so this puts a hard limit on
+    the level of nesting in the sql. This test is intentionally skipped in sqlite.
     """
     agg_dag = dag_bag_multiple.get_dag("agg_dag")
-    tis = run_tasks(dag_bag_multiple, execution_date=DEFAULT_DATE)
-    session = settings.Session()
-    try:
-        qry = session.query(TaskInstance).filter(
-            TaskInstance.state == State.NONE, TaskInstance.dag_id.in_(dag_bag_multiple.dag_ids)
-        )
-        assert agg_dag.clear(dag_bag=dag_bag_multiple) == len(tis) == qry.count() == 10
-    finally:
-        session.close()
+
+    for delta in range(len(agg_dag.tasks)):
+        execution_date = DEFAULT_DATE + timedelta(days=delta)
+        run_tasks(dag_bag_multiple, execution_date=execution_date)
+
+    # There used to be some slowness caused by calling count() inside DAG.clear().
+    # That has since been fixed. It should take no more than a few seconds to call
+    # dag.clear() here.
+    assert agg_dag.clear(start_date=execution_date, end_date=execution_date, dag_bag=dag_bag_multiple) == 51
 
 
 @pytest.fixture

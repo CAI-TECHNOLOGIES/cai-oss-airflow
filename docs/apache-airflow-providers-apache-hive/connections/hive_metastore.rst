@@ -42,7 +42,7 @@ Configuring the Connection
 --------------------------
 
 Host (optional)
-    The host of your Hive Metastore node. It is possible to specify multiple hosts as a comma-separated list.
+    The host of your Hive Metastore node.
 
 Port (optional)
     Your Hive Metastore port number.
@@ -52,9 +52,9 @@ Extra (optional)
     The following parameters are all optional:
 
     * ``auth_mechanism``
-      Specify the mechanism for authentication. Default is ``NOSASL``.
+      Specify the mechanism for authentication the default is ``NOSASL``.
     * ``kerberos_service_name``
-      Specify the kerberos service name. Default is ``hive``.
+      Specify The kerberos service name the default is ``hive``.
 
 
 When specifying the connection in environment variable you should specify

@@ -16,17 +16,16 @@
 # specific language governing permissions and limitations
 # under the License.
 
-import os
-import signal
+import unittest
 from datetime import datetime, timedelta
 from tempfile import NamedTemporaryFile, TemporaryDirectory
-from time import sleep
 from unittest import mock
 
 import pytest
 from parameterized import parameterized
 
-from airflow.exceptions import AirflowException, AirflowSkipException, AirflowTaskTimeout
+from airflow.exceptions import AirflowException, AirflowSkipException
+from airflow.models import DagRun
 from airflow.models.dag import DAG
 from airflow.operators.bash import BashOperator
 from airflow.utils import timezone
@@ -38,27 +37,12 @@ END_DATE = datetime(2016, 1, 2, tzinfo=timezone.utc)
 INTERVAL = timedelta(hours=12)
 
 
-class TestBashOperator:
-    @parameterized.expand(
-        [
-            (False, None, 'MY_PATH_TO_AIRFLOW_HOME'),
-            (True, {'AIRFLOW_HOME': 'OVERRIDDEN_AIRFLOW_HOME'}, 'OVERRIDDEN_AIRFLOW_HOME'),
-        ]
-    )
-    def test_echo_env_variables(self, append_env, user_defined_env, expected_airflow_home):
+class TestBashOperator(unittest.TestCase):
+    def test_echo_env_variables(self):
         """
         Test that env variables are exported correctly to the task bash environment.
         """
         utc_now = datetime.utcnow().replace(tzinfo=timezone.utc)
-        expected = (
-            f"{expected_airflow_home}\n"
-            "AWESOME_PYTHONPATH\n"
-            "bash_op_test\n"
-            "echo_env_vars\n"
-            f"{utc_now.isoformat()}\n"
-            f"manual__{utc_now.isoformat()}\n"
-        )
-
         dag = DAG(
             dag_id='bash_op_test',
             default_args={'owner': 'airflow', 'retries': 100, 'start_date': DEFAULT_DATE},
@@ -84,8 +68,6 @@ class TestBashOperator:
                 'echo $AIRFLOW_CTX_TASK_ID>> {0};'
                 'echo $AIRFLOW_CTX_EXECUTION_DATE>> {0};'
                 'echo $AIRFLOW_CTX_DAG_RUN_ID>> {0};'.format(tmp_file.name),
-                append_env=append_env,
-                env=user_defined_env,
             )
 
             with mock.patch.dict(
@@ -95,7 +77,13 @@ class TestBashOperator:
 
             with open(tmp_file.name) as file:
                 output = ''.join(file.readlines())
-                assert expected == output
+                assert 'MY_PATH_TO_AIRFLOW_HOME' in output
+                # exported in run-tests as part of PYTHONPATH
+                assert 'AWESOME_PYTHONPATH' in output
+                assert 'bash_op_test' in output
+                assert 'echo_env_vars' in output
+                assert utc_now.isoformat() in output
+                assert DagRun.generate_run_id(DagRunType.MANUAL, utc_now) in output
 
     @parameterized.expand(
         [
@@ -159,6 +147,7 @@ class TestBashOperator:
                 BashOperator(task_id='abc', bash_command=test_cmd, cwd=tmp_file.name).execute({})
 
     def test_valid_cwd(self):
+
         test_cmd = 'set -e; echo "xxxx" |tee outputs.txt'
         with TemporaryDirectory(prefix='test_command_with_cwd') as test_cwd_folder:
             # Test everything went alright
@@ -181,30 +170,3 @@ class TestBashOperator:
             kwargs.update(**extra_kwargs)
         with pytest.raises(expected_exc):
             BashOperator(**kwargs).execute({})
-
-    def test_bash_operator_multi_byte_output(self):
-        op = BashOperator(
-            task_id='test_multi_byte_bash_operator',
-            bash_command="echo \u2600",
-            output_encoding='utf-8',
-        )
-        op.execute(context={})
-
-    def test_bash_operator_kill(self, dag_maker):
-        import psutil
-
-        sleep_time = "100%d" % os.getpid()
-        with dag_maker():
-            op = BashOperator(
-                task_id='test_bash_operator_kill',
-                execution_timeout=timedelta(microseconds=25),
-                bash_command=f"/bin/bash -c 'sleep {sleep_time}'",
-            )
-        with pytest.raises(AirflowTaskTimeout):
-            op.run()
-        sleep(2)
-        for proc in psutil.process_iter():
-            if proc.cmdline() == ['sleep', sleep_time]:
-                os.kill(proc.pid, signal.SIGTERM)
-                assert False, "BashOperator's subprocess still running after stopping on timeout!"
-                break

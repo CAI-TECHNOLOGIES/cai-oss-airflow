@@ -29,7 +29,6 @@ from kubernetes.client.rest import ApiException
 from urllib3 import HTTPResponse
 
 from airflow import AirflowException
-from airflow.models.taskinstance import TaskInstanceKey
 from airflow.utils import timezone
 from tests.test_utils.config import conf_vars
 
@@ -191,7 +190,7 @@ class TestKubernetesExecutor:
 
     def setup_method(self) -> None:
         self.kubernetes_executor = KubernetesExecutor()
-        self.kubernetes_executor.job_id = 5
+        self.kubernetes_executor.job_id = "5"
 
     @pytest.mark.skipif(
         AirflowKubernetesScheduler is None, reason='kubernetes python package is not installed'
@@ -245,7 +244,7 @@ class TestKubernetesExecutor:
             kubernetes_executor.start()
             # Execute a task while the Api Throws errors
             try_number = 1
-            task_instance_key = TaskInstanceKey('dag', 'task', 'run_id', try_number)
+            task_instance_key = ('dag', 'task', 'run_id', try_number)
             kubernetes_executor.execute_async(
                 key=task_instance_key,
                 queue=None,
@@ -327,7 +326,7 @@ class TestKubernetesExecutor:
             assert executor.task_queue.empty()
 
             executor.execute_async(
-                key=TaskInstanceKey('dag', 'task', 'run_id', 1),
+                key=('dag', 'task', 'run_id', 1),
                 queue=None,
                 command=['airflow', 'tasks', 'run', 'true', 'some_parameter'],
                 executor_config={

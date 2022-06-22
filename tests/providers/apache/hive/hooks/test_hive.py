@@ -36,23 +36,13 @@ from airflow.providers.apache.hive.hooks.hive import HiveMetastoreHook, HiveServ
 from airflow.secrets.environment_variables import CONN_ENV_PREFIX
 from airflow.utils import timezone
 from airflow.utils.operator_helpers import AIRFLOW_VAR_NAME_FORMAT_MAPPING
-from tests.providers.apache.hive import (
-    BaseMockConnectionCursor,
-    MockHiveCliHook,
-    MockHiveServer2Hook,
-    MockSubProcess,
-)
 from tests.test_utils.asserts import assert_equal_ignore_multiple_spaces
+from tests.test_utils.mock_hooks import MockHiveCliHook, MockHiveServer2Hook
+from tests.test_utils.mock_process import EmptyMockConnectionCursor, MockSubProcess
 
 DEFAULT_DATE = timezone.datetime(2015, 1, 1)
 DEFAULT_DATE_ISO = DEFAULT_DATE.isoformat()
 DEFAULT_DATE_DS = DEFAULT_DATE_ISO[:10]
-
-
-class EmptyMockConnectionCursor(BaseMockConnectionCursor):
-    def __init__(self):
-        super().__init__()
-        self.iterable = []
 
 
 @pytest.mark.skipif(
@@ -69,9 +59,7 @@ class TestHiveEnvironment(unittest.TestCase):
         self.table = 'static_babynames_partitioned'
         with mock.patch(
             'airflow.providers.apache.hive.hooks.hive.HiveMetastoreHook.get_metastore_client'
-        ) as get_metastore_mock, mock.patch(
-            'airflow.providers.apache.hive.hooks.hive.HiveMetastoreHook.get_connection'
-        ):
+        ) as get_metastore_mock:
             get_metastore_mock.return_value = mock.MagicMock()
 
             self.hook = HiveMetastoreHook()
@@ -267,7 +255,9 @@ class TestHiveCliHook(unittest.TestCase):
             "STORED AS textfile\n;".format(table=table, fields=fields)
         )
 
-        load_data = f"LOAD DATA LOCAL INPATH '{filepath}' OVERWRITE INTO TABLE {table} ;\n"
+        load_data = "LOAD DATA LOCAL INPATH '{filepath}' OVERWRITE INTO TABLE {table} ;\n".format(
+            filepath=filepath, table=table
+        )
         calls = [mock.call(create_table), mock.call(load_data)]
         mock_run_cli.assert_has_calls(calls, any_order=True)
 
@@ -412,33 +402,19 @@ class TestHiveMetastoreHook(TestHiveEnvironment):
         assert isinstance(max_partition, str)
 
     @mock.patch(
-        "airflow.providers.apache.hive.hooks.hive.HiveMetastoreHook._find_valid_host",
-        return_value="localhost",
+        "airflow.providers.apache.hive.hooks.hive.HiveMetastoreHook.get_connection",
+        return_value=Connection(host="localhost", port=9802),
     )
     @mock.patch("airflow.providers.apache.hive.hooks.hive.socket")
-    def test_error_metastore_client(self, socket_mock, _find_valid_host_mock):
+    def test_error_metastore_client(self, socket_mock, _find_valid_server_mock):
         socket_mock.socket.return_value.connect_ex.return_value = 0
         self.hook.get_metastore_client()
 
-    @mock.patch(
-        "airflow.providers.apache.hive.hooks.hive.HiveMetastoreHook.get_connection",
-        return_value=Connection(host="metastore1.host,metastore2.host", port=9802),
-    )
-    @mock.patch("airflow.providers.apache.hive.hooks.hive.socket")
-    def test_ha_hosts(self, socket_mock, get_connection_mock):
-        socket_mock.socket.return_value.connect_ex.return_value = 1
-        with pytest.raises(AirflowException):
-            HiveMetastoreHook()
-        assert socket_mock.socket.call_count == 2
-
     def test_get_conn(self):
         with mock.patch(
-            'airflow.providers.apache.hive.hooks.hive.HiveMetastoreHook._find_valid_host'
-        ) as find_valid_host, mock.patch(
-            'airflow.providers.apache.hive.hooks.hive.HiveMetastoreHook.get_connection'
-        ) as get_connection:
-            find_valid_host.return_value = mock.MagicMock(return_value="")
-            get_connection.return_value = mock.MagicMock(return_value="")
+            'airflow.providers.apache.hive.hooks.hive.HiveMetastoreHook._find_valid_server'
+        ) as find_valid_server:
+            find_valid_server.return_value = mock.MagicMock(return_value={})
             metastore_hook = HiveMetastoreHook()
 
         assert isinstance(metastore_hook.get_conn(), HMSClient)
@@ -456,9 +432,7 @@ class TestHiveMetastoreHook(TestHiveEnvironment):
 
         assert self.hook.check_for_partition(self.database, self.table, partition)
 
-        metastore.get_partitions_by_filter(
-            self.database, self.table, partition, HiveMetastoreHook.MAX_PART_COUNT
-        )
+        metastore.get_partitions_by_filter(self.database, self.table, partition, 1)
 
         # Check for non-existent partition.
         missing_partition = f"{self.partition_by}='{self.next_day}'"
@@ -466,9 +440,7 @@ class TestHiveMetastoreHook(TestHiveEnvironment):
 
         assert not self.hook.check_for_partition(self.database, self.table, missing_partition)
 
-        metastore.get_partitions_by_filter.assert_called_with(
-            self.database, self.table, missing_partition, HiveMetastoreHook.MAX_PART_COUNT
-        )
+        metastore.get_partitions_by_filter.assert_called_with(self.database, self.table, missing_partition, 1)
 
     def test_check_for_named_partition(self):
 

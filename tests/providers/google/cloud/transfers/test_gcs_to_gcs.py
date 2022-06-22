@@ -379,7 +379,9 @@ class TestGoogleCloudStorageToCloudStorageOperator(unittest.TestCase):
 
         total_wildcards = operator.source_object.count(WILDCARD)
 
-        error_msg = f"Only one wildcard '[*]' is allowed in source_object parameter. Found {total_wildcards}"
+        error_msg = "Only one wildcard '[*]' is allowed in source_object parameter. Found {}".format(
+            total_wildcards
+        )
 
         with pytest.raises(AirflowException, match=error_msg):
             operator.execute(None)
@@ -546,20 +548,3 @@ class TestGoogleCloudStorageToCloudStorageOperator(unittest.TestCase):
             mock.call(DESTINATION_BUCKET, prefix="foo/bar", delimiter=""),
         ]
         mock_hook.return_value.list.assert_has_calls(mock_calls)
-
-    @mock.patch('airflow.providers.google.cloud.transfers.gcs_to_gcs.GCSHook')
-    def test_execute_source_object_required_flag_true(self, mock_hook):
-        mock_hook.return_value.exists.return_value = False
-        operator = GCSToGCSOperator(
-            task_id=TASK_ID,
-            source_bucket=TEST_BUCKET,
-            source_objects=SOURCE_OBJECTS_SINGLE_FILE,
-            destination_bucket=DESTINATION_BUCKET,
-            destination_object=DESTINATION_OBJECT_PREFIX,
-            source_object_required=True,
-        )
-
-        with pytest.raises(
-            AirflowException, match=f"{SOURCE_OBJECTS_SINGLE_FILE} does not exist in bucket {TEST_BUCKET}"
-        ):
-            operator.execute(None)

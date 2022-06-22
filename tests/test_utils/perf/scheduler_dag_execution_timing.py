@@ -24,7 +24,7 @@ import time
 from argparse import Namespace
 from operator import attrgetter
 
-import rich_click as click
+import click
 
 MAX_DAG_RUNS_ALLOWED = 1
 

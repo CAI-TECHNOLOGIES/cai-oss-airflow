@@ -30,7 +30,7 @@ from tests.test_utils.www import check_content_in_response, check_content_not_in
 
 
 def test_index(admin_client):
-    with assert_queries_count(11):
+    with assert_queries_count(49):
         resp = admin_client.get('/', follow_redirects=True)
     check_content_in_response('DAGs', resp)
 
@@ -209,12 +209,12 @@ def test_roles_delete_unauthorized(app, viewer_client, exist_role, exist_role_na
     [
         ("userstatschartview/chart/", "admin_client", "User Statistics"),
         ("userstatschartview/chart/", "viewer_client", "Access is Denied"),
-        ("actions/list", "admin_client", "List Actions"),
-        ("actions/list", "viewer_client", "Access is Denied"),
-        ("resources/list/", "admin_client", "List Resources"),
-        ("resources/list/", "viewer_client", "Access is Denied"),
-        ("permissions/list/", "admin_client", "List Permissions"),
-        ("permissions/list/", "viewer_client", "Access is Denied"),
+        ("permissions/list", "admin_client", "List Base Permissions"),
+        ("permissions/list", "viewer_client", "Access is Denied"),
+        ("viewmenus/list/", "admin_client", "List View Menus"),
+        ("viewmenus/list/", "viewer_client", "Access is Denied"),
+        ("permissionviews/list/", "admin_client", "List Permissions on Views/Menus"),
+        ("permissionviews/list/", "viewer_client", "Access is Denied"),
         ("resetpassword/form?pk=1", "admin_client", "Reset Password Form"),
         ("resetpassword/form?pk=1", "viewer_client", "Access is Denied"),
         ("users/list", "admin_client", "List Users"),
@@ -223,12 +223,12 @@ def test_roles_delete_unauthorized(app, viewer_client, exist_role, exist_role_na
     ids=[
         "userstatschertview-admin",
         "userstatschertview-viewer",
-        "actions-admin",
-        "actions-viewer",
-        "resources-admin",
-        "resources-viewer",
         "permissions-admin",
         "permissions-viewer",
+        "viewmenus-admin",
+        "viewmenus-viewer",
+        "permissionviews-admin",
+        "permissionviews-viewer",
         "resetpassword-admin",
         "resetpassword-viewer",
         "users-admin",
@@ -260,18 +260,17 @@ def test_views_post(admin_client, url, check_response):
 
 
 @pytest.mark.parametrize(
-    "url, client, content, username",
+    "url, client, content",
     [
-        ("resetmypassword/form", "viewer_client", "Password Changed", "test_viewer"),
-        ("resetpassword/form?pk={}", "admin_client", "Password Changed", "test_admin"),
-        ("resetpassword/form?pk={}", "viewer_client", "Access is Denied", "test_viewer"),
+        ("resetmypassword/form", "viewer_client", "Password Changed"),
+        ("resetpassword/form?pk=1", "admin_client", "Password Changed"),
+        ("resetpassword/form?pk=1", "viewer_client", "Access is Denied"),
     ],
     ids=["my-viewer", "pk-admin", "pk-viewer"],
 )
-def test_resetmypasswordview_edit(app, request, url, client, content, username):
-    user = app.appbuilder.sm.find_user(username)
+def test_resetmypasswordview_edit(request, url, client, content):
     resp = request.getfixturevalue(client).post(
-        url.format(user.id), data={'password': 'blah', 'conf_password': 'blah'}, follow_redirects=True
+        url, data={'password': 'blah', 'conf_password': 'blah'}, follow_redirects=True
     )
     check_content_in_response(content, resp)
 
@@ -390,14 +389,3 @@ def test_page_instance_name_xss_prevention(admin_client):
         escaped_xss_string = "&lt;script&gt;alert(&#39;Give me your credit card number&#39;)&lt;/script&gt;"
         check_content_in_response(escaped_xss_string, resp)
         check_content_not_in_response(xss_string, resp)
-
-
-@conf_vars(
-    {
-        ("webserver", "instance_name"): "<b>Bold Site Title Test</b>",
-        ("webserver", "instance_name_has_markup"): "True",
-    }
-)
-def test_page_instance_name_with_markup(admin_client):
-    resp = admin_client.get('home', follow_redirects=True)
-    check_content_in_response('<b>Bold Site Title Test</b>', resp)

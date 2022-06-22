@@ -34,28 +34,13 @@ Prerequisite Tasks
 Manage Amazon EKS Clusters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. _howto/sensor:EksClusterStateSensor:
-
-Amazon EKS Cluster State Sensor
-"""""""""""""""""""""""""""""""
-
-To check the state of an Amazon EKS Cluster until it reaches the target state or another terminal
-state you can use :class:`~airflow.providers.amazon.aws.sensors.eks.EksClusterStateSensor`.
-
-.. exampleinclude:: /../../airflow/providers/amazon/aws/example_dags/example_eks_with_nodegroups.py
-    :language: python
-    :dedent: 4
-    :start-after: [START howto_sensor_eks_cluster]
-    :end-before: [END howto_sensor_eks_cluster]
-
-
-.. _howto/operator:EksCreateClusterOperator:
+.. _howto/operator:EKSCreateClusterOperator:
 
 Create an Amazon EKS Cluster
 """"""""""""""""""""""""""""
 
 To create an Amazon EKS Cluster you can use
-:class:`~airflow.providers.amazon.aws.operators.eks.EksCreateClusterOperator`.
+:class:`~airflow.providers.amazon.aws.operators.eks.EKSCreateClusterOperator`.
 
 Note: An AWS IAM role with the following permissions is required:
   ``eks.amazonaws.com`` must be added to the Trusted Relationships
@@ -63,21 +48,19 @@ Note: An AWS IAM role with the following permissions is required:
 
 .. exampleinclude:: /../../airflow/providers/amazon/aws/example_dags/example_eks_with_nodegroups.py
     :language: python
-    :dedent: 4
     :start-after: [START howto_operator_eks_create_cluster]
     :end-before: [END howto_operator_eks_create_cluster]
 
-.. _howto/operator:EksDeleteClusterOperator:
+.. _howto/operator:EKSDeleteClusterOperator:
 
 Delete an Amazon EKS Cluster
 """"""""""""""""""""""""""""
 
 To delete an existing Amazon EKS Cluster you can use
-:class:`~airflow.providers.amazon.aws.operators.eks.EksDeleteClusterOperator`.
+:class:`~airflow.providers.amazon.aws.operators.eks.EKSDeleteClusterOperator`.
 
 .. exampleinclude:: /../../airflow/providers/amazon/aws/example_dags/example_eks_with_nodegroups.py
     :language: python
-    :dedent: 4
     :start-after: [START howto_operator_eks_delete_cluster]
     :end-before: [END howto_operator_eks_delete_cluster]
 
@@ -87,7 +70,6 @@ Note: If the cluster has any attached resources, such as an Amazon EKS Nodegroup
 
 .. exampleinclude:: /../../airflow/providers/amazon/aws/example_dags/example_eks_with_nodegroup_in_one_step.py
     :language: python
-    :dedent: 4
     :start-after: [START howto_operator_eks_force_delete_cluster]
     :end-before: [END howto_operator_eks_force_delete_cluster]
 
@@ -95,27 +77,13 @@ Note: If the cluster has any attached resources, such as an Amazon EKS Nodegroup
 Manage Amazon EKS Managed Nodegroups
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. _howto/sensor:EksNodegroupStateSensor:
-
-Amazon EKS Managed Nodegroup State Sensor
-"""""""""""""""""""""""""""""""""""""""""
-
-To check the state of an Amazon EKS managed node group until it reaches the target state or another terminal
-state you can use :class:`~airflow.providers.amazon.aws.sensors.eks.EksNodegroupStateSensor`.
-
-.. exampleinclude:: /../../airflow/providers/amazon/aws/example_dags/example_eks_with_nodegroups.py
-    :language: python
-    :dedent: 4
-    :start-after: [START howto_sensor_eks_nodegroup]
-    :end-before: [END howto_sensor_eks_nodegroup]
-
-.. _howto/operator:EksCreateNodegroupOperator:
+.. _howto/operator:EKSCreateNodegroupOperator:
 
 Create an Amazon EKS Managed NodeGroup
 """"""""""""""""""""""""""""""""""""""
 
 To create an Amazon EKS Managed Nodegroup you can use
-:class:`~airflow.providers.amazon.aws.operators.eks.EksCreateNodegroupOperator`.
+:class:`~airflow.providers.amazon.aws.operators.eks.EKSCreateNodegroupOperator`.
 
 Note:  An AWS IAM role with the following permissions is required:
   ``ec2.amazon.aws.com`` must be in the Trusted Relationships
@@ -124,21 +92,19 @@ Note:  An AWS IAM role with the following permissions is required:
 
 .. exampleinclude:: /../../airflow/providers/amazon/aws/example_dags/example_eks_with_nodegroups.py
     :language: python
-    :dedent: 4
     :start-after: [START howto_operator_eks_create_nodegroup]
     :end-before: [END howto_operator_eks_create_nodegroup]
 
-.. _howto/operator:EksDeleteNodegroupOperator:
+.. _howto/operator:EKSDeleteNodegroupOperator:
 
 Delete an Amazon EKS Managed Nodegroup
 """"""""""""""""""""""""""""""""""""""
 
 To delete an existing Amazon EKS Managed Nodegroup you can use
-:class:`~airflow.providers.amazon.aws.operators.eks.EksDeleteNodegroupOperator`.
+:class:`~airflow.providers.amazon.aws.operators.eks.EKSDeleteNodegroupOperator`.
 
 .. exampleinclude:: /../../airflow/providers/amazon/aws/example_dags/example_eks_with_nodegroups.py
     :language: python
-    :dedent: 4
     :start-after: [START howto_operator_eks_delete_nodegroup]
     :end-before: [END howto_operator_eks_delete_nodegroup]
 
@@ -147,7 +113,7 @@ Create an Amazon EKS Cluster and Nodegroup in one step
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 To create an Amazon EKS Cluster and an EKS Managed Nodegroup in one command, you can use
-:class:`~airflow.providers.amazon.aws.operators.eks.EksCreateClusterOperator`.
+:class:`~airflow.providers.amazon.aws.operators.eks.EKSCreateClusterOperator`.
 
 Note: An AWS IAM role with the following permissions is required:
   ``ec2.amazon.aws.com`` must be in the Trusted Relationships
@@ -158,7 +124,6 @@ Note: An AWS IAM role with the following permissions is required:
 
 .. exampleinclude:: /../../airflow/providers/amazon/aws/example_dags/example_eks_with_nodegroup_in_one_step.py
     :language: python
-    :dedent: 4
     :start-after: [START howto_operator_eks_create_cluster_with_nodegroup]
     :end-before: [END howto_operator_eks_create_cluster_with_nodegroup]
 
@@ -166,7 +131,7 @@ Create an Amazon EKS Cluster and AWS Fargate profile in one step
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 To create an Amazon EKS Cluster and an AWS Fargate profile in one command, you can use
-:class:`~airflow.providers.amazon.aws.operators.eks.EksCreateClusterOperator`.
+:class:`~airflow.providers.amazon.aws.operators.eks.EKSCreateClusterOperator`.
 
 Note: An AWS IAM role with the following permissions is required:
   ``ec2.amazon.aws.com`` must be in the Trusted Relationships
@@ -177,35 +142,19 @@ Note: An AWS IAM role with the following permissions is required:
 
 .. exampleinclude:: /../../airflow/providers/amazon/aws/example_dags/example_eks_with_fargate_in_one_step.py
     :language: python
-    :dedent: 4
     :start-after: [START howto_operator_eks_create_cluster_with_fargate_profile]
     :end-before: [END howto_operator_eks_create_cluster_with_fargate_profile]
 
 Manage AWS Fargate Profiles
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. _howto/sensor:EksFargateProfileStateSensor:
-
-AWS Fargate Profile State Sensor
-""""""""""""""""""""""""""""""""
-
-To check the state of an AWS Fargate profile until it reaches the target state or another terminal
-state you can use :class:`~airflow.providers.amazon.aws.sensors.eks.EksFargateProfileSensor`.
-
-.. exampleinclude:: /../../airflow/providers/amazon/aws/example_dags/example_eks_with_fargate_profile.py
-    :language: python
-    :dedent: 4
-    :start-after: [START howto_sensor_eks_fargate]
-    :end-before: [END howto_sensor_eks_fargate]
-
-
-.. _howto/operator:EksCreateFargateProfileOperator:
+.. _howto/operator:EKSCreateFargateProfileOperator:
 
 Create an AWS Fargate Profile
 """""""""""""""""""""""""""""
 
 To create an AWS Fargate Profile you can use
-:class:`~airflow.providers.amazon.aws.operators.eks.EksCreateFargateProfileOperator`.
+:class:`~airflow.providers.amazon.aws.operators.eks.EKSCreateFargateProfileOperator`.
 
 Note:  An AWS IAM role with the following permissions is required:
   ``ec2.amazon.aws.com`` must be in the Trusted Relationships
@@ -214,37 +163,34 @@ Note:  An AWS IAM role with the following permissions is required:
 
 .. exampleinclude:: /../../airflow/providers/amazon/aws/example_dags/example_eks_with_fargate_profile.py
     :language: python
-    :dedent: 4
     :start-after: [START howto_operator_eks_create_fargate_profile]
     :end-before: [END howto_operator_eks_create_fargate_profile]
 
-.. _howto/operator:EksDeleteFargateProfileOperator:
+.. _howto/operator:EKSDeleteFargateProfileOperator:
 
 Delete an AWS Fargate Profile
 """""""""""""""""""""""""""""
 
 To delete an existing AWS Fargate Profile you can use
-:class:`~airflow.providers.amazon.aws.operators.eks.EksDeleteFargateProfileOperator`.
+:class:`~airflow.providers.amazon.aws.operators.eks.EKSDeleteFargateProfileOperator`.
 
 .. exampleinclude:: /../../airflow/providers/amazon/aws/example_dags/example_eks_with_fargate_profile.py
     :language: python
-    :dedent: 4
     :start-after: [START howto_operator_eks_delete_fargate_profile]
     :end-before: [END howto_operator_eks_delete_fargate_profile]
 
-.. _howto/operator:EksPodOperator:
+.. _howto/operator:EKSPodOperator:
 
 Perform a Task on an Amazon EKS Cluster
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 To run a pod on an existing Amazon EKS Cluster, you can use
-:class:`~airflow.providers.amazon.aws.operators.eks.EksPodOperator`.
+:class:`~airflow.providers.amazon.aws.operators.eks.EKSPodOperator`.
 
 Note: An Amazon EKS Cluster with underlying compute infrastructure is required.
 
 .. exampleinclude:: /../../airflow/providers/amazon/aws/example_dags/example_eks_with_nodegroups.py
     :language: python
-    :dedent: 4
     :start-after: [START howto_operator_eks_pod_operator]
     :end-before: [END howto_operator_eks_pod_operator]
 

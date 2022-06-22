@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -14,7 +15,6 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-# shellcheck shell=bash
 set -euo pipefail
 
 : "${INSTALL_MSSQL_CLIENT:?Should be true or false}"
@@ -23,7 +23,6 @@ COLOR_BLUE=$'\e[34m'
 readonly COLOR_BLUE
 COLOR_RESET=$'\e[0m'
 readonly COLOR_RESET
-
 function install_mssql_client() {
     echo
     echo "${COLOR_BLUE}Installing mssql client${COLOR_RESET}"

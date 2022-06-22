@@ -14,54 +14,26 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-from contextlib import contextmanager
-
 from airflow.api_connexion.exceptions import EXCEPTIONS_LINK_MAP
 from airflow.www.security import EXISTING_ROLES
 
 
-@contextmanager
-def create_test_client(app, user_name, role_name, permissions):
-    """
-    Helper function to create a client with a temporary user which will be deleted once done
-    """
-    client = app.test_client()
-    with create_user_scope(app, username=user_name, role_name=role_name, permissions=permissions) as _:
-        resp = client.post("/login/", data={"username": user_name, "password": user_name})
-        assert resp.status_code == 302
-        yield client
-
-
-@contextmanager
-def create_user_scope(app, username, **kwargs):
-    """
-    Helper function designed to be used with pytest fixture mainly.
-    It will create a user and provide it for the fixture via YIELD (generator)
-    then will tidy up once test is complete
-    """
-    test_user = create_user(app, username, **kwargs)
-
-    try:
-        yield test_user
-    finally:
-        delete_user(app, username)
-
-
-def create_user(app, username, role_name=None, email=None, permissions=None):
+def create_user(app, *, username, role_name, email=None, permissions=None):
     appbuilder = app.appbuilder
 
     # Removes user and role so each test has isolated test data.
     delete_user(app, username)
-    role = None
-    if role_name:
-        delete_role(app, role_name)
-        role = create_role(app, role_name, permissions)
+    delete_role(app, role_name)
+    role = create_role(app, role_name, permissions)
+
+    if email is None:
+        email = f"{username}@example.org"
 
     return appbuilder.sm.add_user(
         username=username,
         first_name=username,
         last_name=username,
-        email=email or f"{username}@example.org",
+        email=email,
         role=role,
         password=username,
     )
@@ -76,27 +48,19 @@ def create_role(app, name, permissions=None):
         permissions = []
     for permission in permissions:
         perm_object = appbuilder.sm.get_permission(*permission)
-        appbuilder.sm.add_permission_to_role(role, perm_object)
+        appbuilder.sm.add_permission_role(role, perm_object)
     return role
 
 
-def set_user_single_role(app, username, role_name):
-    role = create_role(app, role_name)
-    user = app.appbuilder.sm.find_user(username)
-    if role not in user.roles:
-        user.roles = [role]
-        app.appbuilder.sm.update_user(user)
-
-
 def delete_role(app, name):
-    if name not in EXISTING_ROLES:
-        if app.appbuilder.sm.find_role(name):
-            app.appbuilder.sm.delete_role(name)
+    if app.appbuilder.sm.find_role(name):
+        app.appbuilder.sm.delete_role(name)
 
 
 def delete_roles(app):
     for role in app.appbuilder.sm.get_all_roles():
-        delete_role(app, role.name)
+        if role.name not in EXISTING_ROLES:
+            app.appbuilder.sm.delete_role(role.name)
 
 
 def delete_user(app, username):

@@ -23,7 +23,7 @@ import textwrap
 from collections import Counter
 from glob import glob
 from itertools import chain, product
-from typing import Any, Dict, Iterable, List, Set
+from typing import Any, Dict, Iterable, List
 
 import jsonschema
 import yaml
@@ -34,7 +34,7 @@ from tabulate import tabulate
 try:
     from yaml import CSafeLoader as SafeLoader
 except ImportError:
-    from yaml import SafeLoader  # type: ignore
+    from yaml import SafeLoader  # type: ignore[no-redef]
 
 if __name__ != "__main__":
     raise Exception(
@@ -80,7 +80,7 @@ def _load_package_data(package_paths: Iterable[str]):
     return result
 
 
-def get_all_integration_names(yaml_files) -> List[str]:
+def get_all_integration_names(yaml_files):
     all_integrations = [
         i['integration-name'] for f in yaml_files.values() if 'integrations' in f for i in f["integrations"]
     ]
@@ -137,7 +137,7 @@ def assert_sets_equal(set1, set2):
 
 
 def check_if_objects_belongs_to_package(
-    object_names: Set[str], provider_package: str, yaml_file_path: str, resource_type: str
+    object_names: List[str], provider_package: str, yaml_file_path: str, resource_type: str
 ):
     for object_name in object_names:
         if not object_name.startswith(provider_package):
@@ -151,10 +151,7 @@ def parse_module_data(provider_data, resource_type, yaml_file_path):
     package_dir = ROOT_DIR + "/" + os.path.dirname(yaml_file_path)
     provider_package = os.path.dirname(yaml_file_path).replace(os.sep, ".")
     py_files = chain(
-        glob(f"{package_dir}/**/{resource_type}/*.py"),
-        glob(f"{package_dir}/{resource_type}/*.py"),
-        glob(f"{package_dir}/**/{resource_type}/**/*.py"),
-        glob(f"{package_dir}/{resource_type}/**/*.py"),
+        glob(f"{package_dir}/**/{resource_type}/*.py"), glob(f"{package_dir}/{resource_type}/*.py")
     )
     expected_modules = {_filepath_to_module(f) for f in py_files if not f.endswith("/__init__.py")}
     resource_data = provider_data.get(resource_type, [])
@@ -286,8 +283,8 @@ def check_invalid_integration(yaml_files: Dict[str, Dict]):
 
 def check_doc_files(yaml_files: Dict[str, Dict]):
     print("Checking doc files")
-    current_doc_urls: List[str] = []
-    current_logo_urls: List[str] = []
+    current_doc_urls = []
+    current_logo_urls = []
     for provider in yaml_files.values():
         if 'integrations' in provider:
             current_doc_urls.extend(

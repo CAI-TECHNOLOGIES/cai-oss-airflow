@@ -16,6 +16,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
+import unittest
 from typing import Dict, List
 from unittest import mock
 
@@ -24,6 +25,7 @@ import pytest
 from google.cloud.bigtable.column_family import MaxVersionsGCRule
 from google.cloud.bigtable.instance import Instance
 from google.cloud.bigtable_admin_v2 import enums
+from parameterized import parameterized
 
 from airflow.exceptions import AirflowException
 from airflow.providers.google.cloud.operators.bigtable import (
@@ -55,24 +57,18 @@ INITIAL_SPLIT_KEYS = []  # type: List
 EMPTY_COLUMN_FAMILIES = {}  # type: Dict
 
 
-class TestBigtableInstanceCreate:
-    @pytest.mark.parametrize(
-        "missing_attribute, project_id, instance_id, main_cluster_id, main_cluster_zone",
+class TestBigtableInstanceCreate(unittest.TestCase):
+    @parameterized.expand(
         [
             ('instance_id', PROJECT_ID, '', CLUSTER_ID, CLUSTER_ZONE),
             ('main_cluster_id', PROJECT_ID, INSTANCE_ID, '', CLUSTER_ZONE),
             ('main_cluster_zone', PROJECT_ID, INSTANCE_ID, CLUSTER_ID, ''),
         ],
+        testcase_func_name=lambda f, n, p: 'test_empty_attribute.empty_' + p.args[0],
     )
     @mock.patch('airflow.providers.google.cloud.operators.bigtable.BigtableHook')
     def test_empty_attribute(
-        self,
-        mock_hook,
-        missing_attribute,
-        project_id,
-        instance_id,
-        main_cluster_id,
-        main_cluster_zone,
+        self, missing_attribute, project_id, instance_id, main_cluster_id, main_cluster_zone, mock_hook
     ):
         with pytest.raises(AirflowException) as ctx:
             BigtableCreateInstanceOperator(
@@ -236,7 +232,7 @@ class TestBigtableInstanceCreate:
         )
 
 
-class TestBigtableInstanceUpdate:
+class TestBigtableInstanceUpdate(unittest.TestCase):
     @mock.patch('airflow.providers.google.cloud.operators.bigtable.BigtableHook')
     def test_delete_execute(self, mock_hook):
         op = BigtableUpdateInstanceOperator(
@@ -288,12 +284,14 @@ class TestBigtableInstanceUpdate:
             timeout=None,
         )
 
-    @pytest.mark.parametrize(
-        "missing_attribute, project_id, instance_id",
-        [('instance_id', PROJECT_ID, '')],
+    @parameterized.expand(
+        [
+            ('instance_id', PROJECT_ID, ''),
+        ],
+        testcase_func_name=lambda f, n, p: 'test_empty_attribute.empty_' + p.args[0],
     )
     @mock.patch('airflow.providers.google.cloud.operators.bigtable.BigtableHook')
-    def test_empty_attribute(self, mock_hook, missing_attribute, project_id, instance_id):
+    def test_empty_attribute(self, missing_attribute, project_id, instance_id, mock_hook):
         with pytest.raises(AirflowException) as ctx:
             BigtableUpdateInstanceOperator(
                 project_id=project_id,
@@ -391,17 +389,17 @@ class TestBigtableInstanceUpdate:
         )
 
 
-class TestBigtableClusterUpdate:
-    @pytest.mark.parametrize(
-        "missing_attribute, project_id, instance_id, cluster_id, nodes",
+class TestBigtableClusterUpdate(unittest.TestCase):
+    @parameterized.expand(
         [
             ('instance_id', PROJECT_ID, '', CLUSTER_ID, NODES),
             ('cluster_id', PROJECT_ID, INSTANCE_ID, '', NODES),
             ('nodes', PROJECT_ID, INSTANCE_ID, CLUSTER_ID, ''),
         ],
+        testcase_func_name=lambda f, n, p: 'test_empty_attribute.empty_' + p.args[0],
     )
     @mock.patch('airflow.providers.google.cloud.operators.bigtable.BigtableHook')
-    def test_empty_attribute(self, mock_hook, missing_attribute, project_id, instance_id, cluster_id, nodes):
+    def test_empty_attribute(self, missing_attribute, project_id, instance_id, cluster_id, nodes, mock_hook):
         with pytest.raises(AirflowException) as ctx:
             BigtableUpdateClusterOperator(
                 project_id=project_id,
@@ -547,7 +545,7 @@ class TestBigtableClusterUpdate:
         )
 
 
-class TestBigtableInstanceDelete:
+class TestBigtableInstanceDelete(unittest.TestCase):
     @mock.patch('airflow.providers.google.cloud.operators.bigtable.BigtableHook')
     def test_delete_execute(self, mock_hook):
         op = BigtableDeleteInstanceOperator(
@@ -583,12 +581,14 @@ class TestBigtableInstanceDelete:
             project_id=None, instance_id=INSTANCE_ID
         )
 
-    @pytest.mark.parametrize(
-        "missing_attribute, project_id, instance_id",
-        [('instance_id', PROJECT_ID, '')],
+    @parameterized.expand(
+        [
+            ('instance_id', PROJECT_ID, ''),
+        ],
+        testcase_func_name=lambda f, n, p: 'test_empty_attribute.empty_' + p.args[0],
     )
     @mock.patch('airflow.providers.google.cloud.operators.bigtable.BigtableHook')
-    def test_empty_attribute(self, mock_hook, missing_attribute, project_id, instance_id):
+    def test_empty_attribute(self, missing_attribute, project_id, instance_id, mock_hook):
         with pytest.raises(AirflowException) as ctx:
             BigtableDeleteInstanceOperator(project_id=project_id, instance_id=instance_id, task_id="id")
         err = ctx.value
@@ -661,7 +661,7 @@ class TestBigtableInstanceDelete:
         )
 
 
-class TestBigtableTableDelete:
+class TestBigtableTableDelete(unittest.TestCase):
     @mock.patch('airflow.providers.google.cloud.operators.bigtable.BigtableHook')
     def test_delete_execute(self, mock_hook):
         op = BigtableDeleteTableOperator(
@@ -681,15 +681,15 @@ class TestBigtableTableDelete:
             project_id=PROJECT_ID, instance_id=INSTANCE_ID, table_id=TABLE_ID
         )
 
-    @pytest.mark.parametrize(
-        "missing_attribute, project_id, instance_id, table_id",
+    @parameterized.expand(
         [
             ('instance_id', PROJECT_ID, '', TABLE_ID),
             ('table_id', PROJECT_ID, INSTANCE_ID, ''),
         ],
+        testcase_func_name=lambda f, n, p: 'test_empty_attribute.empty_' + p.args[0],
     )
     @mock.patch('airflow.providers.google.cloud.operators.bigtable.BigtableHook')
-    def test_empty_attribute(self, mock_hook, missing_attribute, project_id, instance_id, table_id):
+    def test_empty_attribute(self, missing_attribute, project_id, instance_id, table_id, mock_hook):
         with pytest.raises(AirflowException) as ctx:
             BigtableDeleteTableOperator(
                 project_id=project_id,
@@ -795,7 +795,7 @@ class TestBigtableTableDelete:
         )
 
 
-class TestBigtableTableCreate:
+class TestBigtableTableCreate(unittest.TestCase):
     @mock.patch('airflow.providers.google.cloud.operators.bigtable.BigtableHook')
     def test_create_execute(self, mock_hook):
         op = BigtableCreateTableOperator(
@@ -821,15 +821,15 @@ class TestBigtableTableCreate:
             column_families=EMPTY_COLUMN_FAMILIES,
         )
 
-    @pytest.mark.parametrize(
-        "missing_attribute, project_id, instance_id, table_id",
+    @parameterized.expand(
         [
             ('instance_id', PROJECT_ID, '', TABLE_ID),
             ('table_id', PROJECT_ID, INSTANCE_ID, ''),
         ],
+        testcase_func_name=lambda f, n, p: 'test_empty_attribute.empty_' + p.args[0],
     )
     @mock.patch('airflow.providers.google.cloud.operators.bigtable.BigtableHook')
-    def test_empty_attribute(self, mock_hook, missing_attribute, project_id, instance_id, table_id):
+    def test_empty_attribute(self, missing_attribute, project_id, instance_id, table_id, mock_hook):
         with pytest.raises(AirflowException) as ctx:
             BigtableCreateTableOperator(
                 project_id=project_id,

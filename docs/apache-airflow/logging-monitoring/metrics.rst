@@ -25,7 +25,7 @@ Airflow can be set up to send metrics to `StatsD <https://github.com/etsy/statsd
 Setup
 -----
 
-First you must install StatsD requirement:
+First you must install statsd requirement:
 
 .. code-block:: bash
 
@@ -59,7 +59,7 @@ to the stat name if necessary, and returns the transformed stat name. The functi
         return stat_name.lower()[:32]
 
 If you want to use a custom Statsd client instead of the default one provided by Airflow, the following key must be added
-to the configuration file alongside the module path of your custom StatsD client. This module must be available on
+to the configuration file alongside the module path of your custom Statsd client. This module must be available on
 your :envvar:`PYTHONPATH`.
 
 .. code-block:: ini
@@ -100,7 +100,6 @@ Name                                        Description
 ``scheduler.critical_section_busy``         Count of times a scheduler process tried to get a lock on the critical
                                             section (needed to send tasks to the executor) and found it locked by
                                             another process.
-``sla_callback_notification_failure``       Number of failed SLA miss callback notification attempts
 ``sla_email_notification_failure``          Number of failed SLA miss email notification attempts
 ``ti.start.<dag_id>.<task_id>``             Number of started task in a given dag. Similar to <job_name>_start but for task
 ``ti.finish.<dag_id>.<task_id>.<state>``    Number of completed task in a given dag. Similar to <job_name>_end but for task

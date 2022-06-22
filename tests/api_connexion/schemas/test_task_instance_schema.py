@@ -88,7 +88,6 @@ class TestTaskInstanceSchema:
             "task_id": "TEST_TASK_ID",
             "try_number": 0,
             "unixname": getuser(),
-            "dag_run_id": None,
         }
         assert serialized_ti == expected_json
 
@@ -133,7 +132,6 @@ class TestTaskInstanceSchema:
             "task_id": "TEST_TASK_ID",
             "try_number": 0,
             "unixname": getuser(),
-            "dag_run_id": None,
         }
         assert serialized_ti == expected_json
 
@@ -209,7 +207,6 @@ class TestSetTaskInstanceStateFormSchema:
             ({"include_future": "foo"},),
             ({"execution_date": "NOW"},),
             ({"new_state": "INVALID_STATE"},),
-            ({"execution_date": "2020-01-01T00:00:00+00:00", "dag_run_id": "dagrun_id"},),
         ]
     )
     def test_validation_error(self, override_data):

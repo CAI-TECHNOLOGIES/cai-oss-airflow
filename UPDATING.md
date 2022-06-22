@@ -81,88 +81,6 @@ https://developers.google.com/style/inclusive-documentation
 
 -->
 
-### Zip files in the DAGs folder can no longer have a `.py` extension
-
-It was previously possible to have any extension for zip files in the DAGs folder. Now `.py` files are going to be loaded as modules without checking whether it is a zip file, as it leads to less IO. If a `.py` file in the DAGs folder is a zip compressed file, parsing it will fail with an exception.
-
-### You have to use `postgresql://` instead of `postgres://` in `sql_alchemy_conn` for SQLAlchemy 1.4.0+
-
-When you use SQLAlchemy 1.4.0+, you need ot use `postgresql://` as the database in the `sql_alchemy_conn`.
-In the previous versions of SQLAlchemy it was possible to use `postgres://`, but using it in
-SQLAlchemy 1.4.0+ results in:
-
-```
->       raise exc.NoSuchModuleError(
-            "Can't load plugin: %s:%s" % (self.group, name)
-        )
-E       sqlalchemy.exc.NoSuchModuleError: Can't load plugin: sqlalchemy.dialects:postgres
-```
-
-If you cannot change the prefix of your URL immediately, Airflow continues to work with SQLAlchemy
-1.3 and you can downgrade SQLAlchemy, but we recommend to update the prefix.
-Details in the [SQLAlchemy Changelog](https://docs.sqlalchemy.org/en/14/changelog/changelog_14.html#change-3687655465c25a39b968b4f5f6e9170b).
-
-### Passing `execution_date` to `XCom.set()`, `XCom.clear()`, `XCom.get_one()`, and `XCom.get_many()` is deprecated
-
-Continuing the effort to bind TaskInstance to a DagRun, XCom entries are now also tied to a DagRun. Use the ``run_id`` argument to specify the DagRun instead.
-
-### Non-JSON-serializable params deprecated.
-
-It was previously possible to use dag or task param defaults that were not JSON-serializable.
-
-For example this worked previously:
-
-```python
-@dag.task(params={"a": {1, 2, 3}, "b": pendulum.now()})
-def datetime_param(value):
-    print(value)
-
-
-datetime_param("{{ params.a }} | {{ params.b }}")
-```
-
-Note the use of `set` and `datetime` types, which are not JSON-serializable.  This behavior is problematic because to override these values in a dag run conf, you must use JSON, which could make these params non-overridable.  Another problem is that the support for param validation assumes JSON.  Use of non-JSON-serializable params will be removed in Airflow 3.0 and until then, use of them will produce a warning at parse time.
-
-### Task log templates are now read from the metadatabase instead of `airflow.cfg`
-
-Previously, a task’s log is dynamically rendered from the `[core] log_filename_template` and `[elasticsearch] log_id_template` config values at runtime. This resulted in unfortunate characteristics, e.g. it is impractical to modify the config value after an Airflow instance is running for a while, since all existing task logs have be saved under the previous format and cannot be found with the new config value.
-
-A new `log_template` table is introduced to solve this problem. This table is synchronised with the aforementioned config values every time Airflow starts, and a new field `log_template_id` is added to every DAG run to point to the format used by tasks (`NULL` indicates the first ever entry for compatibility).
-
-### Default templates for log filenames and elasticsearch log_id changed
-
-In order to support Dynamic Task Mapping the default templates for per-task instance logging has changed. If your config contains the old default values they will be upgraded-in-place.
-
-If you are happy with the new config values you should *remove* the setting in `airflow.cfg` and let the default value be used. Old default values were:
-
-
-- `[core] log_filename_template`: `{{ ti.dag_id }}/{{ ti.task_id }}/{{ ts }}/{{ try_number }}.log`
-- `[elasticsearch] log_id_template`: `{dag_id}-{task_id}-{execution_date}-{try_number}`
-
-`[core] log_filename_template` now uses "hive partition style" of `dag_id=<id>/run_id=<id>` by default, which may cause problems on some older FAT filesystems. If this affects you then you will have to change the log template.
-
-If you have customized the templates you should ensure that they contain `{{ ti.map_index }}` if you want to use dynamically mapped tasks.
-
-### `airflow.models.base.Operator` is removed
-
-Previously, there was an empty class `airflow.models.base.Operator` for “type hinting”. This class was never really useful for anything (everything it did could be done better with `airflow.models.baseoperator.BaseOperator`), and has been removed. If you are relying on the class’s existence, use `BaseOperator` (for concrete operators), `airflow.models.abstractoperator.AbstractOperator` (the base class of both `BaseOperator` and the AIP-42 `MappedOperator`), or `airflow.models.operator.Operator` (a union type `BaseOperator | MappedOperator` for type annotation).
-
-### XCom now define `run_id` instead of `execution_date`
-
-As a continuation to the TaskInstance-DagRun relation change started in Airflow 2.2, the `execution_date` columns on XCom has been removed from the database, and replaced by an [association proxy](https://docs.sqlalchemy.org/en/13/orm/extensions/associationproxy.html) field at the ORM level. If you access Airflow’s metadatabase directly, you should rewrite the implementation to use the `run_id` column instead.
-
-Note that Airflow’s metadatabase definition on both the database and ORM levels are considered implementation detail without strict backward compatibility guarantees.
-
-### `auth_backends` replaces `auth_backend` configuration setting
-
-Previously, only one backend was used to authorize use of the REST API. In 2.3 this was changed to support multiple backends, separated by whitespace. Each will be tried in turn until a successful response is returned.
-
-This setting is also used for the deprecated experimental API, which only uses the first option even if multiple are given.
-
-### `auth_backends` includes session
-
-To allow the Airflow UI to use the API, the previous default authorization backend `airflow.api.auth.backend.deny_all` is changed to `airflow.api.auth.backend.session`, and this is automatically added to the list of API authorization backends if a non-default value is set.
-
 ## Airflow 2.2.4
 
 ### Smart sensors deprecated
@@ -173,7 +91,7 @@ See [Migrating to Deferrable Operators](https://airflow.apache.org/docs/apache-a
 
 ## Airflow 2.2.3
 
-No breaking changes.
+Continuing the effort to bind TaskInstance to a DagRun, XCom entries are now also tied to a DagRun. Use the ``run_id`` argument to specify the DagRun instead.
 
 ## Airflow 2.2.2
 
@@ -416,7 +334,7 @@ No breaking changes.
 
 ### `activate_dag_runs` argument of the function `clear_task_instances` is replaced with `dag_run_state`
 
-To achieve the previous default behaviour of `clear_task_instances` with `activate_dag_runs=True`, no change is needed. To achieve the previous behaviour of `activate_dag_runs=False`, pass `dag_run_state=False` instead. (The previous parameter is still accepted, but is deprecated)
+To achieve the previous default behaviour of `clear_task_instances` with `activate_dag_runs=True`, no change is needed. To achieve the previous behaviour of `activate_dag_runs=False`, pass `dag_run_state=False` instead. (The previous paramater is still accepted, but is deprecated)
 
 ### `dag.set_dag_runs_state` is deprecated
 
@@ -1456,7 +1374,7 @@ delete this option.
 
 #### `airflow.models.dagbag.DagBag`
 
-Passing `store_serialized_dags` argument to `DagBag.__init__` and accessing `DagBag.store_serialized_dags` property
+Passing `store_serialized_dags` argument to DagBag.__init__ and accessing `DagBag.store_serialized_dags` property
 are deprecated and will be removed in future versions.
 
 
@@ -1976,58 +1894,6 @@ It is highly recommended to have 1TB+ disk size for Dataproc to have sufficient 
 https://cloud.google.com/compute/docs/disks/performance
 
 Hence, the default value for `master_disk_size` in `DataprocCreateClusterOperator` has been changed from 500GB to 1TB.
-
-##### Generating Cluster Config
-
-If you are upgrading from Airflow 1.10.x and are not using **CLUSTER_CONFIG**,
-You can easily generate config using **make()** of `airflow.providers.google.cloud.operators.dataproc.ClusterGenerator`
-
-This has been proved specially useful if you are using **metadata** argument from older API, refer [AIRFLOW-16911](https://github.com/apache/airflow/issues/16911) for details.
-
-eg. your cluster creation may look like this in **v1.10.x**
-
-```python
-path = f"gs://goog-dataproc-initialization-actions-us-central1/python/pip-install.sh"
-
-create_cluster = DataprocClusterCreateOperator(
-    task_id="create_dataproc_cluster",
-    cluster_name="test",
-    project_id="test",
-    zone="us-central1-a",
-    region="us-central1",
-    master_machine_type="n1-standard-4",
-    worker_machine_type="n1-standard-4",
-    num_workers=2,
-    storage_bucket="test_bucket",
-    init_actions_uris=[path],
-    metadata={"PIP_PACKAGES": "pyyaml requests pandas openpyxl"},
-)
-```
-
-After upgrading to **v2.x.x** and using **CLUSTER_CONFIG**, it will look like followed:
-
-```python
-path = f"gs://goog-dataproc-initialization-actions-us-central1/python/pip-install.sh"
-
-CLUSTER_CONFIG = ClusterGenerator(
-    project_id="test",
-    zone="us-central1-a",
-    master_machine_type="n1-standard-4",
-    worker_machine_type="n1-standard-4",
-    num_workers=2,
-    storage_bucket="test",
-    init_actions_uris=[path],
-    metadata={"PIP_PACKAGES": "pyyaml requests pandas openpyxl"},
-).make()
-
-create_cluster_operator = DataprocClusterCreateOperator(
-    task_id="create_dataproc_cluster",
-    cluster_name="test",
-    project_id="test",
-    region="us-central1",
-    cluster_config=CLUSTER_CONFIG,
-)
-```
 
 #### `airflow.providers.google.cloud.operators.bigquery.BigQueryGetDatasetTablesOperator`
 

@@ -20,7 +20,6 @@ import unittest
 from subprocess import CalledProcessError
 
 import jmespath
-from parameterized import parameterized
 
 from tests.helm_template_generator import render_chart
 
@@ -95,7 +94,7 @@ class ElasticsearchSecretTest(unittest.TestCase):
 
         assert (
             "http://username%21%40%23$%25%25%5E&%2A%28%29:password%21%40%23$%25%25%5E&%2A%28%29@"
-            "elastichostname:9200" == connection
+            "elastichostname:80" == connection
         )
 
     def test_should_generate_secret_with_specified_port(self):
@@ -114,48 +113,3 @@ class ElasticsearchSecretTest(unittest.TestCase):
         )
 
         assert "http://username:password@elastichostname:2222" == connection
-
-    @parameterized.expand(["http", "https"])
-    def test_should_generate_secret_with_specified_schemes(self, scheme):
-        connection = self._get_connection(
-            {
-                "elasticsearch": {
-                    "enabled": True,
-                    "connection": {
-                        "scheme": scheme,
-                        "user": "username",
-                        "pass": "password",
-                        "host": "elastichostname",
-                    },
-                }
-            }
-        )
-
-        assert f"{scheme}://username:password@elastichostname:9200" == connection
-
-    @parameterized.expand(
-        [
-            # When both user and password are empty.
-            ({}, ""),
-            # When password is empty
-            ({"user": "admin"}, ""),
-            # When user is empty
-            ({"pass": "password"}, ""),
-            # Valid username/password
-            ({"user": "admin", "pass": "password"}, "admin:password"),
-        ],
-    )
-    def test_url_generated_when_user_pass_empty_combinations(self, extra_conn_kwargs, expected_user_info):
-        connection = self._get_connection(
-            {
-                "elasticsearch": {
-                    "enabled": True,
-                    "connection": {"host": "elastichostname", "port": 8080, **extra_conn_kwargs},
-                }
-            }
-        )
-
-        if not expected_user_info:
-            assert "http://elastichostname:8080" == connection
-        else:
-            assert f"http://{expected_user_info}@elastichostname:8080" == connection

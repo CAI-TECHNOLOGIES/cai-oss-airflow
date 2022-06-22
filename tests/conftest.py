@@ -242,6 +242,7 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "credential_file(name): mark tests that require credential file in CREDENTIALS_DIR"
     )
+    config.addinivalue_line("markers", "airflow_2: mark tests that works only on Airflow 2.0 / master")
 
 
 def skip_if_not_marked_with_integration(selected_integrations, item):
@@ -250,9 +251,9 @@ def skip_if_not_marked_with_integration(selected_integrations, item):
         if integration_name in selected_integrations or "all" in selected_integrations:
             return
     pytest.skip(
-        f"The test is skipped because it does not have the right integration marker. "
-        f"Only tests marked with pytest.mark.integration(INTEGRATION) are run with INTEGRATION "
-        f"being one of {selected_integrations}. {item}"
+        "The test is skipped because it does not have the right integration marker. "
+        "Only tests marked with pytest.mark.integration(INTEGRATION) are run with INTEGRATION"
+        " being one of {integration}. {item}".format(integration=selected_integrations, item=item)
     )
 
 
@@ -262,8 +263,9 @@ def skip_if_not_marked_with_backend(selected_backend, item):
         if selected_backend in backend_names:
             return
     pytest.skip(
-        f"The test is skipped because it does not have the right backend marker "
-        f"Only tests marked with pytest.mark.backend('{selected_backend}') are run: {item}"
+        "The test is skipped because it does not have the right backend marker "
+        "Only tests marked with pytest.mark.backend('{backend}') are run"
+        ": {item}".format(backend=selected_backend, item=item)
     )
 
 
@@ -273,33 +275,36 @@ def skip_if_not_marked_with_system(selected_systems, item):
         if systems_name in selected_systems or "all" in selected_systems:
             return
     pytest.skip(
-        f"The test is skipped because it does not have the right system marker. "
-        f"Only tests marked with pytest.mark.system(SYSTEM) are run with SYSTEM "
-        f"being one of {selected_systems}. {item}"
+        "The test is skipped because it does not have the right system marker. "
+        "Only tests marked with pytest.mark.system(SYSTEM) are run with SYSTEM"
+        " being one of {systems}. {item}".format(systems=selected_systems, item=item)
     )
 
 
 def skip_system_test(item):
     for marker in item.iter_markers(name="system"):
         pytest.skip(
-            f"The test is skipped because it has system marker. System tests are only run when "
-            f"--system flag with the right system ({marker.args[0]}) is passed to pytest. {item}"
+            "The test is skipped because it has system marker. "
+            "System tests are only run when --system flag "
+            "with the right system ({system}) is passed to pytest. {item}".format(
+                system=marker.args[0], item=item
+            )
         )
 
 
 def skip_long_running_test(item):
     for _ in item.iter_markers(name="long_running"):
         pytest.skip(
-            f"The test is skipped because it has long_running marker. "
-            f"And --include-long-running flag is not passed to pytest. {item}"
+            "The test is skipped because it has long_running marker. "
+            "And --include-long-running flag is not passed to pytest. {item}".format(item=item)
         )
 
 
 def skip_quarantined_test(item):
     for _ in item.iter_markers(name="quarantined"):
         pytest.skip(
-            f"The test is skipped because it has quarantined marker. "
-            f"And --include-quarantined flag is passed to pytest. {item}"
+            "The test is skipped because it has quarantined marker. "
+            "And --include-quarantined flag is passed to pytest. {item}".format(item=item)
         )
 
 
@@ -327,9 +332,15 @@ def skip_if_wrong_backend(marker, item):
     environment_variable_value = os.environ.get(environment_variable_name)
     if not environment_variable_value or environment_variable_value not in valid_backend_names:
         pytest.skip(
-            f"The test requires one of {valid_backend_names} backend started and "
-            f"{environment_variable_name} environment variable to be set to 'true' (it is "
-            f"'{environment_variable_value}'). It can be set by specifying backend at breeze startup: {item}"
+            "The test requires one of {valid_backend_names} backend started and "
+            "{name} environment variable to be set to 'true' (it is '{value}')."
+            " It can be set by specifying backend at breeze startup"
+            ": {item}".format(
+                name=environment_variable_name,
+                value=environment_variable_value,
+                valid_backend_names=valid_backend_names,
+                item=item,
+            )
         )
 
 
@@ -339,6 +350,12 @@ def skip_if_credential_file_missing(item):
         credential_path = os.path.join(os.environ.get('CREDENTIALS_DIR'), credential_file)
         if not os.path.exists(credential_path):
             pytest.skip(f"The test requires credential file {credential_path}: {item}")
+
+
+def skip_if_airflow_2_test(item):
+    for _ in item.iter_markers(name="airflow_2"):
+        if os.environ.get("RUN_AIRFLOW_1_10") == "true":
+            pytest.skip("The test works only with Airflow 2.0 / main branch")
 
 
 def pytest_runtest_setup(item):
@@ -366,6 +383,7 @@ def pytest_runtest_setup(item):
     if not include_quarantined:
         skip_quarantined_test(item)
     skip_if_credential_file_missing(item)
+    skip_if_airflow_2_test(item)
 
 
 @pytest.fixture
@@ -526,7 +544,7 @@ def dag_maker(request):
 
             if "run_type" not in kwargs:
                 kwargs["run_type"] = DagRunType.from_run_id(kwargs["run_id"])
-            if kwargs.get("execution_date") is None:
+            if "execution_date" not in kwargs:
                 if kwargs["run_type"] == DagRunType.MANUAL:
                     kwargs["execution_date"] = self.start_date
                 else:
@@ -589,7 +607,6 @@ def dag_maker(request):
         def cleanup(self):
             from airflow.models import DagModel, DagRun, TaskInstance, XCom
             from airflow.models.serialized_dag import SerializedDagModel
-            from airflow.models.taskmap import TaskMap
             from airflow.utils.retries import run_with_db_retries
 
             for attempt in run_with_db_retries(logger=self.log):
@@ -604,19 +621,16 @@ def dag_maker(request):
                         SerializedDagModel.dag_id.in_(dag_ids)
                     ).delete(synchronize_session=False)
                     self.session.query(DagRun).filter(DagRun.dag_id.in_(dag_ids)).delete(
-                        synchronize_session=False,
+                        synchronize_session=False
                     )
                     self.session.query(TaskInstance).filter(TaskInstance.dag_id.in_(dag_ids)).delete(
-                        synchronize_session=False,
+                        synchronize_session=False
                     )
                     self.session.query(XCom).filter(XCom.dag_id.in_(dag_ids)).delete(
-                        synchronize_session=False,
+                        synchronize_session=False
                     )
                     self.session.query(DagModel).filter(DagModel.dag_id.in_(dag_ids)).delete(
-                        synchronize_session=False,
-                    )
-                    self.session.query(TaskMap).filter(TaskMap.dag_id.in_(dag_ids)).delete(
-                        synchronize_session=False,
+                        synchronize_session=False
                     )
                     self.session.commit()
                     if self._own_session:

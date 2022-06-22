@@ -15,25 +15,25 @@
 # specific language governing permissions and limitations
 # under the License.
 
-import warnings
+import unittest
 from unittest.mock import Mock, patch
 
 import pytest
 
 from airflow.exceptions import AirflowException
 from airflow.providers.tableau.hooks.tableau import TableauJobFinishCode
-
-with warnings.catch_warnings():
-    warnings.simplefilter("ignore", DeprecationWarning)
-    from airflow.providers.tableau.operators.tableau_refresh_workbook import TableauRefreshWorkbookOperator
+from airflow.providers.tableau.operators.tableau_refresh_workbook import TableauRefreshWorkbookOperator
 
 
-class TestTableauRefreshWorkbookOperator:
+class TestTableauRefreshWorkbookOperator(unittest.TestCase):
     """
     Test class for TableauRefreshWorkbookOperator
     """
 
-    def setup_method(self):
+    def setUp(self):
+        """
+        setup
+        """
         self.mocked_workbooks = []
         for i in range(3):
             mock_workbook = Mock()
@@ -44,6 +44,9 @@ class TestTableauRefreshWorkbookOperator:
 
     @patch('airflow.providers.tableau.operators.tableau.TableauHook')
     def test_execute(self, mock_tableau_hook):
+        """
+        Test Execute
+        """
         mock_tableau_hook.get_all = Mock(return_value=self.mocked_workbooks)
         mock_tableau_hook.return_value.__enter__ = Mock(return_value=mock_tableau_hook)
         operator = TableauRefreshWorkbookOperator(blocking=False, workbook_name='wb_2', **self.kwargs)
@@ -55,6 +58,9 @@ class TestTableauRefreshWorkbookOperator:
 
     @patch('airflow.providers.tableau.operators.tableau.TableauHook')
     def test_execute_blocking(self, mock_tableau_hook):
+        """
+        Test execute blocking
+        """
         mock_tableau_hook.get_all = Mock(return_value=self.mocked_workbooks)
         mock_tableau_hook.return_value.__enter__ = Mock(return_value=mock_tableau_hook)
         mock_tableau_hook.server.jobs.get_by_id = Mock(
@@ -72,6 +78,9 @@ class TestTableauRefreshWorkbookOperator:
 
     @patch('airflow.providers.tableau.operators.tableau.TableauHook')
     def test_execute_missing_workbook(self, mock_tableau_hook):
+        """
+        Test execute missing workbook
+        """
         mock_tableau_hook.get_all = Mock(return_value=self.mocked_workbooks)
         mock_tableau_hook.return_value.__enter__ = Mock(return_value=mock_tableau_hook)
         operator = TableauRefreshWorkbookOperator(workbook_name='test', **self.kwargs)

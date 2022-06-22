@@ -128,22 +128,33 @@ Docker Compose
 Pyenv and setting up virtual-env
 --------------------------------
 
-1. Install pyenv and configure your shell's environment for Pyenv as suggested in Pyenv `README <https://github.com/pyenv/pyenv/blob/master/README.md#installation>`_
-
-2. After installing pyenv, you need to install a few more required packages for Airflow
+1. Checking required packages
 
 .. code-block:: bash
 
-  $ sudo apt-get install openssl sqlite default-libmysqlclient-dev libmysqlclient-dev postgresql
+  $ sudo apt-get install -y build-essential libssl-dev zlib1g-dev libbz2-dev \
+      libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev \
+      xz-utils tk-dev libffi-dev liblzma-dev python-openssl git
 
-3. Restart your shell so the path changes take effect and verifying installation
+  $ sudo apt install openssl \
+       sqlite default-libmysqlclient-dev libmysqlclient-dev postgresql
+
+2. Install pyenv
+
+.. code-block:: bash
+
+  $ curl https://pyenv.run | bash
+
+3. Configure your shell's environment for Pyenv as suggested in Pyenv `README <https://github.com/pyenv/pyenv/blob/master/README.md>`_
+
+4. Restart your shell so the path changes take effect and verifying installation
 
 .. code-block:: bash
 
   $ exec $SHELL
   $ pyenv --version
 
-4. Checking available version, installing required Python version to pyenv and verifying it
+5. Checking available version, installing required Python version to pyenv and verifying it
 
 .. code-block:: bash
 
@@ -151,14 +162,14 @@ Pyenv and setting up virtual-env
   $ pyenv install 3.8.5
   $ pyenv versions
 
-5. Creating new virtual environment named ``airflow-env`` for installed version python. In next chapter virtual
+6. Creating new virtual environment named ``airflow-env`` for installed version python. In next chapter virtual
    environment ``airflow-env`` will be used for installing airflow.
 
 .. code-block:: bash
 
   $ pyenv virtualenv 3.8.5 airflow-env
 
-6. Entering virtual environment ``airflow-env``
+7. Entering virtual environment ``airflow-env``
 
 .. code-block:: bash
 
@@ -317,14 +328,10 @@ Installing airflow in the local virtual environment ``airflow-env`` with breeze.
 .. code-block:: bash
 
   $ sudo apt-get install sqlite libsqlite3-dev default-libmysqlclient-dev postgresql
-
-2. Initialize virtual environment with breeze.
-
-.. code-block:: bash
-
   $ ./breeze initialize-local-virtualenv --python 3.8
 
-3. Add following line to ~/.bashrc in order to call breeze command from anywhere.
+
+2. Add following line to ~/.bashrc in order to call breeze command from anywhere.
 
 .. code-block:: bash
 
@@ -424,9 +431,6 @@ Using Breeze
 3. Setup mysql database in
    MySQL Workbench with Host ``127.0.0.1``, port ``23306``, user ``root`` and password
    blank(leave empty), default schema ``airflow``.
-
-   If you cannot connect to MySQL, refer to the Prerequisites section in the
-   |Breeze documentation| and try increasing Docker disk space.
 
    .. raw:: html
 
@@ -556,10 +560,13 @@ Setting up Debug
 - Add a ``__main__`` block at the end of your DAG file to make it runnable. It will run a ``back_fill`` job:
 
   .. code-block:: python
+
+    from airflow.utils.state import State
+
     ...
 
     if __name__ == "__main__":
-        dag.clear()
+        dag.clear(dag_run_state=State.NONE)
         dag.run()
 
 - Add ``AIRFLOW__CORE__EXECUTOR=DebugExecutor`` to Environment variable of Run Configuration.
@@ -624,18 +631,21 @@ All Tests are inside ./tests directory.
 
 .. code-block:: bash
 
-  root@51d89409f7a2:/opt/airflow# pytest tests/utils/test_trigger_rule.py
-  ================================================ test session starts ================================================
-  platform linux -- Python 3.8.12, pytest-6.2.5, py-1.11.0, pluggy-1.0.0 -- /usr/local/bin/python
-  cachedir: .pytest_cache
-  rootdir: /opt/airflow, configfile: pytest.ini
-  plugins: forked-1.4.0, rerunfailures-9.1.1, requests-mock-1.9.3, asyncio-0.18.1, cov-3.0.0, httpx-0.20.0, xdist-2.5.0, flaky-3.7.0, timeouts-1.2.1, anyio-3.5.0, instafail-0.4.2
-  asyncio: mode=strict
-  setup timeout: 0.0s, execution timeout: 0.0s, teardown timeout: 0.0s
-  collected 1 item
+   root@63528318c8b1:/opt/airflow# pytest tests/utils/test_decorators.py
+   ======================================= test session starts =======================================
+   platform linux -- Python 3.8.6, pytest-6.0.1, py-1.9.0, pluggy-0.13.1 -- /usr/local/bin/python
+   cachedir: .pytest_cache
+   rootdir: /opt/airflow, configfile: pytest.ini
+   plugins: celery-4.4.7, requests-mock-1.8.0, xdist-1.34.0, flaky-3.7.0, rerunfailures-9.0, instafail
+   -0.4.2, forked-1.3.0, timeouts-1.2.1, cov-2.10.0
+   setup timeout: 0.0s, execution timeout: 0.0s, teardown timeout: 0.0s
+   collected 3 items
 
-  tests/utils/test_trigger_rule.py::TestTriggerRule::test_valid_trigger_rules PASSED                            [100%]
-  =========================================== 1 passed, 1 warning in 0.66s ============================================
+   tests/utils/test_decorators.py::TestApplyDefault::test_apply PASSED                         [ 33%]
+   tests/utils/test_decorators.py::TestApplyDefault::test_default_args PASSED                  [ 66%]
+   tests/utils/test_decorators.py::TestApplyDefault::test_incorrect_default_args PASSED        [100%]
+
+   ======================================== 3 passed in 1.49s ========================================
 
 - Running All the test with Breeze by specifying required python version, backend, backend version
 
@@ -746,6 +756,14 @@ All Tests are inside ./tests directory.
 
    <a href="https://github.com/apache/airflow/blob/main/TESTING.rst#local-and-remote-debugging-in-ide"
    target="_blank">Local and Remote Debugging in IDE</a>
+
+
+  - |BASH Unit Testing (BATS)|
+
+  .. |BASH Unit Testing (BATS)| raw:: html
+
+   <a href="https://github.com/apache/airflow/blob/main/TESTING.rst#bash-unit-testing-bats" target="_blank">
+   BASH Unit Testing (BATS)</a>
 
 
 Pre-commit
@@ -1355,10 +1373,13 @@ Setting up Debug
 - Add a ``__main__`` block at the end of your DAG file to make it runnable. It will run a ``back_fill`` job:
 
   .. code-block:: python
+
+    from airflow.utils.state import State
+
     ...
 
     if __name__ == "__main__":
-        dag.clear()
+        dag.clear(dag_run_state=State.NONE)
         dag.run()
 
 - Add ``"AIRFLOW__CORE__EXECUTOR": "DebugExecutor"`` to the ``"env"`` field of Debug configuration.
@@ -1552,6 +1573,14 @@ All Tests are inside ./tests directory.
 
    <a href="https://github.com/apache/airflow/blob/main/TESTING.rst#local-and-remote-debugging-in-ide"
    target="_blank">Local and Remote Debugging in IDE</a>
+
+
+  - |BASH Unit Testing (BATS)|
+
+  .. |BASH Unit Testing (BATS)| raw:: html
+
+   <a href="https://github.com/apache/airflow/blob/main/TESTING.rst#bash-unit-testing-bats" target="_blank">
+   BASH Unit Testing (BATS)</a>
 
 
 Pre-commit
@@ -1800,262 +1829,3 @@ describes how to do it.
 .. raw:: html
 
   </details>
-
-
-Setup and develop using Gitpod online workspaces
-################################################
-
-.. raw:: html
-
-  <details>
-    <summary>Setup and develop using Gitpod online workspaces</summary>
-
-
-
-Setup Airflow with Breeze
--------------------------
-
-
-Forking and cloning Project
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-1. Goto |airflow_github| and fork the project.
-
-   .. |airflow_github| raw:: html
-
-     <a href="https://github.com/apache/airflow/" target="_blank">https://github.com/apache/airflow/</a>
-
-   .. raw:: html
-
-     <div align="center" style="padding-bottom:10px">
-       <img src="images/quick_start/airflow_fork.png"
-            alt="Forking Apache Airflow project">
-     </div>
-
-2. Goto your github account's fork of airflow click on ``Code`` and copy the clone link.
-
-   .. raw:: html
-
-      <div align="center" style="padding-bottom:10px">
-        <img src="images/quick_start/airflow_clone.png"
-             alt="Cloning github fork of Apache airflow">
-      </div>
-
-3. Add goto https://gitpod.io/#<copied-url> as shown.
-
-   .. raw:: html
-
-      <div align="center" style="padding-bottom:10px">
-        <img src="images/quick_start/airflow_gitpod_url.png"
-             alt="Open personal airflow clone with Gitpod">
-      </div>
-
-Setting up Breeze
-~~~~~~~~~~~~~~~~~
-
-1. Breeze is already initialized in one of the terminals in Gitpod
-
-2. Once the breeze environment is initialized, create airflow tables and users from the breeze CLI. ``airflow db reset``
-   is required to execute at least once for Airflow Breeze to get the database/tables created.
-
-.. note::
-
-   This step is needed when you would like to run/use webserver.
-
-.. code-block:: bash
-
-  root@b76fcb399bb6:/opt/airflow# airflow db reset
-  root@b76fcb399bb6:/opt/airflow# airflow users create --role Admin --username admin --password admin \
-    --email admin@example.com --firstname foo --lastname bar
-
-
-3. Closing Breeze environment. After successfully finishing above command will leave you in container,
-   type ``exit`` to exit the container
-
-.. code-block:: bash
-
-  root@b76fcb399bb6:/opt/airflow#
-  root@b76fcb399bb6:/opt/airflow# exit
-
-.. code-block:: bash
-
-  $ ./breeze stop
-
-
-Installing Airflow with Breeze.
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Gitpod default image have all the required packages installed.
-
-1. Add following line to ~/.bashrc in order to call breeze command from anywhere.
-
-.. code-block:: bash
-
-  export PATH=${PATH}:"/workspace/airflow"
-  source ~/.bashrc
-
-
-Using Breeze
-~~~~~~~~~~~~
-
-1. Starting breeze environment using ``breeze start-airflow`` starts Breeze environment with last configuration run.
-   It also automatically starts webserver, backend and scheduler. It drops you in tmux with scheduler in bottom left
-   and webserver in bottom right. Use ``[Ctrl + B] and Arrow keys`` to navigate.
-
-.. code-block:: bash
-
-  $ breeze start-airflow
-
-      Use CI image.
-
-   Branch name:            main
-   Docker image:           ghcr.io/apache/airflow/main/ci/python3.8:latest
-   Airflow source version: 2.3.0.dev0
-   Python version:         3.8
-   Backend:                mysql 5.7
-
-
-   Port forwarding:
-
-   Ports are forwarded to the running docker containers for webserver and database
-     * 12322 -> forwarded to Airflow ssh server -> airflow:22
-     * 28080 -> forwarded to Airflow webserver -> airflow:8080
-     * 25555 -> forwarded to Flower dashboard -> airflow:5555
-     * 25433 -> forwarded to Postgres database -> postgres:5432
-     * 23306 -> forwarded to MySQL database  -> mysql:3306
-     * 21433 -> forwarded to MSSQL database  -> mssql:1443
-     * 26379 -> forwarded to Redis broker -> redis:6379
-
-   Here are links to those services that you can use on host:
-     * ssh connection for remote debugging: ssh -p 12322 airflow@127.0.0.1 pw: airflow
-     * Webserver: http://127.0.0.1:28080
-     * Flower:    http://127.0.0.1:25555
-     * Postgres:  jdbc:postgresql://127.0.0.1:25433/airflow?user=postgres&password=airflow
-     * Mysql:     jdbc:mysql://127.0.0.1:23306/airflow?user=root
-     * Redis:     redis://127.0.0.1:26379/0
-
-.. raw:: html
-
-      <div align="center" style="padding-bottom:10px">
-        <img src="images/quick_start/start_airflow_tmux_gitpod.png"
-             alt="Accessing local airflow">
-      </div>
-
-2. You can access the ports as shown
-
-.. raw:: html
-
-      <div align="center" style="padding-bottom:10px">
-        <img src="images/quick_start/airflow_gitpod_open_ports.png"
-             alt="Accessing ports via VSCode UI">
-      </div>
-
-
-
-Starting development
---------------------
-
-
-Creating a branch
-~~~~~~~~~~~~~~~~~
-
-1. Click on the branch symbol in the status bar
-
-   .. raw:: html
-
-      <div align="center" style="padding-bottom:10px">
-        <img src="images/quick_start/vscode_creating_branch_1.png"
-             alt="Creating a new branch">
-      </div>
-
-2. Give a name to a branch and checkout
-
-   .. raw:: html
-
-      <div align="center" style="padding-bottom:10px">
-        <img src="images/quick_start/vscode_creating_branch_2.png"
-             alt="Giving a name to a branch">
-      </div>
-
-
-
-Testing
-~~~~~~~
-
-All Tests are inside ``./tests`` directory.
-
-- Running Unit tests inside Breeze environment.
-
-  Just run ``pytest filepath+filename`` to run the tests.
-
-.. code-block:: bash
-
-   root@4a2143c17426:/opt/airflow# pytest tests/utils/test_session.py
-   ======================================= test session starts =======================================
-   platform linux -- Python 3.7.12, pytest-6.2.5, py-1.11.0, pluggy-1.0.0 -- /usr/local/bin/python
-   cachedir: .pytest_cache
-   rootdir: /opt/airflow, configfile: pytest.ini
-   plugins: anyio-3.3.4, flaky-3.7.0, asyncio-0.16.0, cov-3.0.0, forked-1.3.0, httpx-0.15.0, instafail-0.4.2, rerunfailures-9.1.1, timeouts-1.2.1, xdist-2.4.0, requests-mock-1.9.3
-   setup timeout: 0.0s, execution timeout: 0.0s, teardown timeout: 0.0s
-   collected 4 items
-
-   tests/utils/test_session.py::TestSession::test_raised_provide_session PASSED                          [ 25%]
-   tests/utils/test_session.py::TestSession::test_provide_session_without_args_and_kwargs PASSED         [ 50%]
-   tests/utils/test_session.py::TestSession::test_provide_session_with_args PASSED                       [ 75%]
-   tests/utils/test_session.py::TestSession::test_provide_session_with_kwargs PASSED                     [100%]
-
-   ====================================== 4 passed, 11 warnings in 33.14s ======================================
-
-- Running All the tests with Breeze by specifying required Python version, backend, backend version
-
-.. code-block:: bash
-
-   $ breeze --backend mysql --mysql-version 5.7 --python 3.8 --db-reset --test-type All  tests
-
-
-- Running specific test in container using shell scripts. Testing in container scripts are located in
-  ``./scripts/in_container`` directory.
-
-.. code-block:: bash
-
-   root@4a2143c17426:/opt/airflow# ls ./scripts/in_container/
-   _in_container_script_init.sh  quarantine_issue_header.md                 run_mypy.sh
-   _in_container_utils.sh        run_anything.sh                            run_prepare_airflow_packages.sh
-   airflow_ci.cfg                run_ci_tests.sh                            run_prepare_provider_documentation.sh
-   bin                           run_docs_build.sh                          run_prepare_provider_packages.sh
-   check_environment.sh          run_extract_tests.sh                       run_resource_check.sh
-   check_junitxml_result.py      run_fix_ownership.sh                       run_system_tests.sh
-   configure_environment.sh      run_flake8.sh                              run_tmux_welcome.sh
-   entrypoint_ci.sh              run_generate_constraints.sh                stop_tmux_airflow.sh
-   entrypoint_exec.sh            run_init_script.sh                         update_quarantined_test_status.py
-   prod                          run_install_and_test_provider_packages.sh
-
-   root@df8927308887:/opt/airflow# ./scripts/in_container/run_docs_build.sh
-
-- Running specific type of test
-
-  - Types of tests
-
-  - Running specific type of test
-
-  .. note::
-
-     Before starting a new instance, let's clear the volume and databases "fresh like a daisy". You
-     can do this by:
-
-     .. code-block::bash
-
-       $ breeze stop
-
-  .. code-block:: bash
-
-    $ breeze --backend mysql --mysql-version 5.7 --python 3.8 --db-reset --test-type Core
-
-
-- Running Integration test for specific test type
-
-  - Running an Integration Test
-
-  .. code-block:: bash
-
-   $ breeze --backend mysql --mysql-version 5.7 --python 3.8 --db-reset --test-type All --integration mongo

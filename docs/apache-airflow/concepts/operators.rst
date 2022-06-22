@@ -88,7 +88,7 @@ You can also use Jinja templating with nested fields, as long as these nested fi
 .. code-block:: python
 
     class MyDataReader:
-        template_fields: Sequence[str] = ("path",)
+        template_fields = ["path"]
 
         def __init__(self, my_path):
             self.path = my_path
@@ -110,7 +110,7 @@ Deep nested fields can also be substituted, as long as all intermediate fields a
 .. code-block:: python
 
     class MyDataTransformer:
-        template_fields: Sequence[str] = ("reader",)
+        template_fields = ["reader"]
 
         def __init__(self, my_reader):
             self.reader = my_reader
@@ -119,7 +119,7 @@ Deep nested fields can also be substituted, as long as all intermediate fields a
 
 
     class MyDataReader:
-        template_fields: Sequence[str] = ("path",)
+        template_fields = ["path"]
 
         def __init__(self, my_path):
             self.path = my_path
@@ -147,8 +147,6 @@ You can pass custom options to the Jinja ``Environment`` when creating your DAG.
     )
 
 See the `Jinja documentation <https://jinja.palletsprojects.com/en/2.11.x/api/#jinja2.Environment>`_ to find all available options.
-
-.. _concepts:templating-native-objects:
 
 Rendering Fields as Native Python Objects
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

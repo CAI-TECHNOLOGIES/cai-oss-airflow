@@ -30,58 +30,96 @@ from airflow import AirflowException
 from airflow.models import Connection
 from airflow.providers.trino.hooks.trino import TrinoHook
 
-HOOK_GET_CONNECTION = 'airflow.providers.trino.hooks.trino.TrinoHook.get_connection'
-BASIC_AUTHENTICATION = 'airflow.providers.trino.hooks.trino.trino.auth.BasicAuthentication'
-KERBEROS_AUTHENTICATION = 'airflow.providers.trino.hooks.trino.trino.auth.KerberosAuthentication'
-TRINO_DBAPI_CONNECT = 'airflow.providers.trino.hooks.trino.trino.dbapi.connect'
 
-
-class TestTrinoHookConn:
-    @patch(BASIC_AUTHENTICATION)
-    @patch(TRINO_DBAPI_CONNECT)
-    @patch(HOOK_GET_CONNECTION)
+class TestTrinoHookConn(unittest.TestCase):
+    @patch('airflow.providers.trino.hooks.trino.trino.auth.BasicAuthentication')
+    @patch('airflow.providers.trino.hooks.trino.trino.dbapi.connect')
+    @patch('airflow.providers.trino.hooks.trino.TrinoHook.get_connection')
     def test_get_conn_basic_auth(self, mock_get_connection, mock_connect, mock_basic_auth):
-        self.set_get_connection_return_value(mock_get_connection, password='password')
-        TrinoHook().get_conn()
-        self.assert_connection_called_with(mock_connect, auth=mock_basic_auth)
-        mock_basic_auth.assert_called_once_with('login', 'password')
+        mock_get_connection.return_value = Connection(
+            login='login', password='password', host='host', schema='hive'
+        )
 
-    @patch(HOOK_GET_CONNECTION)
+        conn = TrinoHook().get_conn()
+        mock_connect.assert_called_once_with(
+            catalog='hive',
+            host='host',
+            port=None,
+            http_scheme='http',
+            schema='hive',
+            source='airflow',
+            user='login',
+            isolation_level=0,
+            auth=mock_basic_auth.return_value,
+            verify=True,
+        )
+        mock_basic_auth.assert_called_once_with('login', 'password')
+        assert mock_connect.return_value == conn
+
+    @patch('airflow.providers.trino.hooks.trino.TrinoHook.get_connection')
     def test_get_conn_invalid_auth(self, mock_get_connection):
-        extras = {'auth': 'kerberos'}
-        self.set_get_connection_return_value(
-            mock_get_connection,
+        mock_get_connection.return_value = Connection(
+            login='login',
             password='password',
-            extra=json.dumps(extras),
+            host='host',
+            schema='hive',
+            extra=json.dumps({'auth': 'kerberos'}),
         )
         with pytest.raises(
             AirflowException, match=re.escape("Kerberos authorization doesn't support password.")
         ):
             TrinoHook().get_conn()
 
-    @patch(KERBEROS_AUTHENTICATION)
-    @patch(TRINO_DBAPI_CONNECT)
-    @patch(HOOK_GET_CONNECTION)
+    @patch('airflow.providers.trino.hooks.trino.trino.auth.KerberosAuthentication')
+    @patch('airflow.providers.trino.hooks.trino.trino.dbapi.connect')
+    @patch('airflow.providers.trino.hooks.trino.TrinoHook.get_connection')
     def test_get_conn_kerberos_auth(self, mock_get_connection, mock_connect, mock_auth):
-        extras = {
-            'auth': 'kerberos',
-            'kerberos__config': 'TEST_KERBEROS_CONFIG',
-            'kerberos__service_name': 'TEST_SERVICE_NAME',
-            'kerberos__mutual_authentication': 'TEST_MUTUAL_AUTHENTICATION',
-            'kerberos__force_preemptive': True,
-            'kerberos__hostname_override': 'TEST_HOSTNAME_OVERRIDE',
-            'kerberos__sanitize_mutual_error_response': True,
-            'kerberos__principal': 'TEST_PRINCIPAL',
-            'kerberos__delegate': 'TEST_DELEGATE',
-            'kerberos__ca_bundle': 'TEST_CA_BUNDLE',
-            'verify': 'true',
-        }
-        self.set_get_connection_return_value(
-            mock_get_connection,
-            extra=json.dumps(extras),
+        mock_get_connection.return_value = Connection(
+            login='login',
+            host='host',
+            schema='hive',
+            extra=json.dumps(
+                {
+                    'auth': 'kerberos',
+                    'kerberos__config': 'TEST_KERBEROS_CONFIG',
+                    'kerberos__service_name': 'TEST_SERVICE_NAME',
+                    'kerberos__mutual_authentication': 'TEST_MUTUAL_AUTHENTICATION',
+                    'kerberos__force_preemptive': True,
+                    'kerberos__hostname_override': 'TEST_HOSTNAME_OVERRIDE',
+                    'kerberos__sanitize_mutual_error_response': True,
+                    'kerberos__principal': 'TEST_PRINCIPAL',
+                    'kerberos__delegate': 'TEST_DELEGATE',
+                    'kerberos__ca_bundle': 'TEST_CA_BUNDLE',
+                    'verify': 'true',
+                }
+            ),
         )
-        TrinoHook().get_conn()
-        self.assert_connection_called_with(mock_connect, auth=mock_auth)
+
+        conn = TrinoHook().get_conn()
+        mock_connect.assert_called_once_with(
+            catalog='hive',
+            host='host',
+            port=None,
+            http_scheme='http',
+            schema='hive',
+            source='airflow',
+            user='login',
+            isolation_level=0,
+            auth=mock_auth.return_value,
+            verify=True,
+        )
+        mock_auth.assert_called_once_with(
+            ca_bundle='TEST_CA_BUNDLE',
+            config='TEST_KERBEROS_CONFIG',
+            delegate='TEST_DELEGATE',
+            force_preemptive=True,
+            hostname_override='TEST_HOSTNAME_OVERRIDE',
+            mutual_authentication='TEST_MUTUAL_AUTHENTICATION',
+            principal='TEST_PRINCIPAL',
+            sanitize_mutual_error_response=True,
+            service_name='TEST_SERVICE_NAME',
+        )
+        assert mock_connect.return_value == conn
 
     @parameterized.expand(
         [
@@ -92,35 +130,29 @@ class TestTrinoHookConn:
             ('/tmp/cert.crt', '/tmp/cert.crt'),
         ]
     )
-    @patch(HOOK_GET_CONNECTION)
-    @patch(TRINO_DBAPI_CONNECT)
-    def test_get_conn_verify(self, current_verify, expected_verify, mock_connect, mock_get_connection):
-        extras = {'verify': current_verify}
-        self.set_get_connection_return_value(mock_get_connection, extra=json.dumps(extras))
-        TrinoHook().get_conn()
-        self.assert_connection_called_with(mock_connect, verify=expected_verify)
+    def test_get_conn_verify(self, current_verify, expected_verify):
+        patcher_connect = patch('airflow.providers.trino.hooks.trino.trino.dbapi.connect')
+        patcher_get_connections = patch('airflow.providers.trino.hooks.trino.TrinoHook.get_connection')
 
-    @staticmethod
-    def set_get_connection_return_value(mock_get_connection, extra=None, password=None):
-        mocked_connection = Connection(
-            login='login', password=password, host='host', schema='hive', extra=extra or '{}'
-        )
-        mock_get_connection.return_value = mocked_connection
+        with patcher_connect as mock_connect, patcher_get_connections as mock_get_connection:
+            mock_get_connection.return_value = Connection(
+                login='login', host='host', schema='hive', extra=json.dumps({'verify': current_verify})
+            )
 
-    @staticmethod
-    def assert_connection_called_with(mock_connect, auth=None, verify=True):
-        mock_connect.assert_called_once_with(
-            catalog='hive',
-            host='host',
-            port=None,
-            http_scheme='http',
-            schema='hive',
-            source='airflow',
-            user='login',
-            isolation_level=IsolationLevel.AUTOCOMMIT,
-            auth=None if not auth else auth.return_value,
-            verify=verify,
-        )
+            conn = TrinoHook().get_conn()
+            mock_connect.assert_called_once_with(
+                catalog='hive',
+                host='host',
+                port=None,
+                http_scheme='http',
+                schema='hive',
+                source='airflow',
+                user='login',
+                auth=None,
+                isolation_level=0,
+                verify=expected_verify,
+            )
+            assert mock_connect.return_value == conn
 
 
 class TestTrinoHook(unittest.TestCase):
@@ -149,9 +181,8 @@ class TestTrinoHook(unittest.TestCase):
         rows = [("hello",), ("world",)]
         target_fields = None
         commit_every = 10
-        replace = True
-        self.db_hook.insert_rows(table, rows, target_fields, commit_every, replace)
-        mock_insert_rows.assert_called_once_with(table, rows, None, 10, True)
+        self.db_hook.insert_rows(table, rows, target_fields, commit_every)
+        mock_insert_rows.assert_called_once_with(table, rows, None, 10)
 
     def test_get_first_record(self):
         statement = 'SQL'
@@ -187,15 +218,6 @@ class TestTrinoHook(unittest.TestCase):
         assert result_sets[1][0] == df.values.tolist()[1][0]
 
         self.cur.execute.assert_called_once_with(statement, None)
-
-    @patch('airflow.hooks.dbapi.DbApiHook.run')
-    def test_run(self, mock_run):
-        hql = "SELECT 1"
-        autocommit = False
-        parameters = {"hello": "world"}
-        handler = str
-        self.db_hook.run(hql, autocommit, parameters, handler)
-        mock_run.assert_called_once_with(sql=hql, autocommit=False, parameters=parameters, handler=str)
 
 
 class TestTrinoHookIntegration(unittest.TestCase):

@@ -18,7 +18,7 @@
 #
 from unittest.mock import patch
 
-from airflow.providers.amazon.aws.hooks.lambda_function import LambdaHook
+from airflow.providers.amazon.aws.hooks.lambda_function import AwsLambdaHook
 
 try:
     from moto import mock_lambda
@@ -26,16 +26,20 @@ except ImportError:
     mock_lambda = None
 
 
-class TestLambdaHook:
+class TestAwsLambdaHook:
     @mock_lambda
     def test_get_conn_returns_a_boto3_connection(self):
-        hook = LambdaHook(aws_conn_id='aws_default', function_name="test_function", region_name="us-east-1")
+        hook = AwsLambdaHook(
+            aws_conn_id='aws_default', function_name="test_function", region_name="us-east-1"
+        )
         assert hook.conn is not None
 
     @mock_lambda
     def test_invoke_lambda_function(self):
 
-        hook = LambdaHook(aws_conn_id='aws_default', function_name="test_function", region_name="us-east-1")
+        hook = AwsLambdaHook(
+            aws_conn_id='aws_default', function_name="test_function", region_name="us-east-1"
+        )
 
         with patch.object(hook.conn, 'invoke') as mock_invoke:
             payload = '{"hello": "airflow"}'

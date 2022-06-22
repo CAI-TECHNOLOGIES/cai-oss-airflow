@@ -58,7 +58,7 @@ class TestTelegramOperator(unittest.TestCase):
             task_id='telegram',
             text="some non empty text",
         )
-        hook.execute(None)
+        hook.execute()
 
         mock_telegram_hook.assert_called_once_with(
             telegram_conn_id='telegram_default',
@@ -89,7 +89,7 @@ class TestTelegramOperator(unittest.TestCase):
                 task_id='telegram',
                 text="some non empty text",
             )
-            hook.execute(None)
+            hook.execute()
 
         assert "cosmic rays caused bit flips" == str(ctx.value)
 
@@ -105,7 +105,7 @@ class TestTelegramOperator(unittest.TestCase):
             text="some non empty text",
             telegram_kwargs={"custom_arg": "value"},
         )
-        hook.execute(None)
+        hook.execute()
 
         mock_telegram_hook.assert_called_once_with(
             telegram_conn_id='telegram_default',
@@ -128,7 +128,7 @@ class TestTelegramOperator(unittest.TestCase):
             text="some non empty text - higher precedence",
             telegram_kwargs={"custom_arg": "value", "text": "some text, that will be ignored"},
         )
-        hook.execute(None)
+        hook.execute()
 
         mock_telegram_hook.assert_called_once_with(
             telegram_conn_id='telegram_default',
@@ -159,8 +159,7 @@ class TestTelegramOperator(unittest.TestCase):
             telegram_kwargs={"custom_arg": "value", "text": "should be ignored"},
         )
         operator.render_template_fields({"ds": "2021-02-04"})
-
-        operator.execute(None)
+        operator.execute()
         assert operator.text == "execution date is 2021-02-04"
         assert 'text' in operator.telegram_kwargs
         assert operator.telegram_kwargs['text'] == "execution date is 2021-02-04"

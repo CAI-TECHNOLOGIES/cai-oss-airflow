@@ -27,35 +27,33 @@ from airflow.sensors.python import PythonSensor
 from airflow.utils.state import State
 from airflow.utils.timezone import datetime
 from airflow.utils.types import DagRunType
-from tests.operators.test_python import Call, assert_calls_equal, build_recording_function
+from tests.operators.test_python import Call, TestPythonBase, build_recording_function
 
 DEFAULT_DATE = datetime(2015, 1, 1)
 
 
-class TestPythonSensor:
-    def test_python_sensor_true(self, dag_maker):
-        with dag_maker():
-            op = PythonSensor(task_id='python_sensor_check_true', python_callable=lambda: True)
+class TestPythonSensor(TestPythonBase):
+    def test_python_sensor_true(self):
+        op = PythonSensor(task_id='python_sensor_check_true', python_callable=lambda: True, dag=self.dag)
         op.run(start_date=DEFAULT_DATE, end_date=DEFAULT_DATE, ignore_ti_state=True)
 
-    def test_python_sensor_false(self, dag_maker):
-        with dag_maker():
-            op = PythonSensor(
-                task_id='python_sensor_check_false',
-                timeout=0.01,
-                poke_interval=0.01,
-                python_callable=lambda: False,
-            )
+    def test_python_sensor_false(self):
+        op = PythonSensor(
+            task_id='python_sensor_check_false',
+            timeout=0.01,
+            poke_interval=0.01,
+            python_callable=lambda: False,
+            dag=self.dag,
+        )
         with pytest.raises(AirflowSensorTimeout):
             op.run(start_date=DEFAULT_DATE, end_date=DEFAULT_DATE, ignore_ti_state=True)
 
-    def test_python_sensor_raise(self, dag_maker):
-        with dag_maker():
-            op = PythonSensor(task_id='python_sensor_check_raise', python_callable=lambda: 1 / 0)
+    def test_python_sensor_raise(self):
+        op = PythonSensor(task_id='python_sensor_check_raise', python_callable=lambda: 1 / 0, dag=self.dag)
         with pytest.raises(ZeroDivisionError):
             op.run(start_date=DEFAULT_DATE, end_date=DEFAULT_DATE, ignore_ti_state=True)
 
-    def test_python_callable_arguments_are_templatized(self, dag_maker):
+    def test_python_callable_arguments_are_templatized(self):
         """Test PythonSensor op_args are templatized"""
         recorded_calls = []
 
@@ -64,18 +62,18 @@ class TestPythonSensor:
         Named = namedtuple('Named', ['var1', 'var2'])
         named_tuple = Named('{{ ds }}', 'unchanged')
 
-        with dag_maker() as dag:
-            task = PythonSensor(
-                task_id='python_sensor',
-                timeout=0.01,
-                poke_interval=0.3,
-                # a Mock instance cannot be used as a callable function or test fails with a
-                # TypeError: Object of type Mock is not JSON serializable
-                python_callable=build_recording_function(recorded_calls),
-                op_args=[4, date(2019, 1, 1), "dag {{dag.dag_id}} ran on {{ds}}.", named_tuple],
-            )
+        task = PythonSensor(
+            task_id='python_sensor',
+            timeout=0.01,
+            poke_interval=0.3,
+            # a Mock instance cannot be used as a callable function or test fails with a
+            # TypeError: Object of type Mock is not JSON serializable
+            python_callable=build_recording_function(recorded_calls),
+            op_args=[4, date(2019, 1, 1), "dag {{dag.dag_id}} ran on {{ds}}.", named_tuple],
+            dag=self.dag,
+        )
 
-        dag.create_dagrun(
+        self.dag.create_dagrun(
             run_type=DagRunType.MANUAL,
             execution_date=DEFAULT_DATE,
             data_interval=(DEFAULT_DATE, DEFAULT_DATE),
@@ -86,36 +84,38 @@ class TestPythonSensor:
             task.run(start_date=DEFAULT_DATE, end_date=DEFAULT_DATE)
 
         ds_templated = DEFAULT_DATE.date().isoformat()
-        assert_calls_equal(
+        # 2 calls: first: at start, second: before timeout
+        assert 2 == len(recorded_calls)
+        self._assert_calls_equal(
             recorded_calls[0],
             Call(
                 4,
                 date(2019, 1, 1),
-                f"dag {dag.dag_id} ran on {ds_templated}.",
+                f"dag {self.dag.dag_id} ran on {ds_templated}.",
                 Named(ds_templated, 'unchanged'),
             ),
         )
 
-    def test_python_callable_keyword_arguments_are_templatized(self, dag_maker):
+    def test_python_callable_keyword_arguments_are_templatized(self):
         """Test PythonSensor op_kwargs are templatized"""
         recorded_calls = []
 
-        with dag_maker() as dag:
-            task = PythonSensor(
-                task_id='python_sensor',
-                timeout=0.01,
-                poke_interval=0.01,
-                # a Mock instance cannot be used as a callable function or test fails with a
-                # TypeError: Object of type Mock is not JSON serializable
-                python_callable=build_recording_function(recorded_calls),
-                op_kwargs={
-                    'an_int': 4,
-                    'a_date': date(2019, 1, 1),
-                    'a_templated_string': "dag {{dag.dag_id}} ran on {{ds}}.",
-                },
-            )
+        task = PythonSensor(
+            task_id='python_sensor',
+            timeout=0.01,
+            poke_interval=0.3,
+            # a Mock instance cannot be used as a callable function or test fails with a
+            # TypeError: Object of type Mock is not JSON serializable
+            python_callable=build_recording_function(recorded_calls),
+            op_kwargs={
+                'an_int': 4,
+                'a_date': date(2019, 1, 1),
+                'a_templated_string': "dag {{dag.dag_id}} ran on {{ds}}.",
+            },
+            dag=self.dag,
+        )
 
-        dag.create_dagrun(
+        self.dag.create_dagrun(
             run_type=DagRunType.MANUAL,
             execution_date=DEFAULT_DATE,
             data_interval=(DEFAULT_DATE, DEFAULT_DATE),
@@ -125,11 +125,15 @@ class TestPythonSensor:
         with pytest.raises(AirflowSensorTimeout):
             task.run(start_date=DEFAULT_DATE, end_date=DEFAULT_DATE)
 
-        assert_calls_equal(
+        # 2 calls: first: at start, second: before timeout
+        assert 2 == len(recorded_calls)
+        self._assert_calls_equal(
             recorded_calls[0],
             Call(
                 an_int=4,
                 a_date=date(2019, 1, 1),
-                a_templated_string=f"dag {dag.dag_id} ran on {DEFAULT_DATE.date().isoformat()}.",
+                a_templated_string="dag {} ran on {}.".format(
+                    self.dag.dag_id, DEFAULT_DATE.date().isoformat()
+                ),
             ),
         )

@@ -107,21 +107,6 @@ def test_process_form_extras():
 
     assert json.loads(mock_form.extra.data) == {"extra__test3__custom_field": "custom_field_val3"}
 
-    # Testing parameters set in both extra and custom fields (cunnection updates).
-    mock_form = mock.Mock()
-    mock_form.data = {
-        "conn_type": "test4",
-        "conn_id": "extras_test4",
-        "extra": '{"extra__test4__custom_field": "custom_field_val3"}',
-        "extra__test4__custom_field": "custom_field_val4",
-    }
-
-    cmv = ConnectionModelView()
-    cmv.extra_fields = ["extra__test4__custom_field"]  # Custom field
-    cmv.process_form(form=mock_form, is_created=True)
-
-    assert json.loads(mock_form.extra.data) == {"extra__test4__custom_field": "custom_field_val4"}
-
 
 def test_duplicate_connection(admin_client):
     """Test Duplicate multiple connection with suffix"""
@@ -163,58 +148,3 @@ def test_duplicate_connection(admin_client):
     response = {conn[0] for conn in session.query(Connection.conn_id).all()}
     assert resp.status_code == 200
     assert expected_result == response
-
-
-def test_duplicate_connection_error(admin_client):
-    """Test Duplicate multiple connection with suffix
-    when there are already 10 copies, no new copy
-    should be created"""
-
-    connection_ids = [f'test_duplicate_postgres_connection_copy{i}' for i in range(1, 11)]
-    connections = [
-        Connection(
-            conn_id=connection_id,
-            conn_type='FTP',
-            description='Postgres',
-            host='localhost',
-            schema='airflow',
-            port=3306,
-        )
-        for connection_id in connection_ids
-    ]
-
-    with create_session() as session:
-        session.query(Connection).delete()
-        session.add_all(connections)
-
-    data = {"action": "mulduplicate", "rowid": [connections[0].id]}
-    resp = admin_client.post('/connection/action_post', data=data, follow_redirects=True)
-
-    expected_result = {f'test_duplicate_postgres_connection_copy{i}' for i in range(1, 11)}
-
-    assert resp.status_code == 200
-    response = {conn[0] for conn in session.query(Connection.conn_id).all()}
-    assert expected_result == response
-
-
-@pytest.fixture()
-def connection():
-    connection = Connection(
-        conn_id='conn1',
-        conn_type='Conn 1',
-        description='Conn 1 description',
-    )
-    with create_session() as session:
-        session.add(connection)
-    yield connection
-    with create_session() as session:
-        session.query(Connection).filter(Connection.conn_id == CONNECTION["conn_id"]).delete()
-
-
-def test_connection_muldelete(admin_client, connection):
-    conn_id = connection.id
-    data = {"action": "muldelete", "rowid": [conn_id]}
-    resp = admin_client.post('/connection/action_post', data=data, follow_redirects=True)
-    assert resp.status_code == 200
-    with create_session() as session:
-        assert session.query(Connection).filter(Connection.id == conn_id).count() == 0

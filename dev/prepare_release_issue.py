@@ -24,7 +24,7 @@ import textwrap
 from collections import defaultdict
 from typing import Any, Dict, List, NamedTuple, Optional, Set, Union
 
-import rich_click as click
+import click
 from github import Github, Issue, PullRequest, UnknownObjectException
 from rich.console import Console
 from rich.progress import Progress
@@ -141,7 +141,7 @@ def get_change_from_line(line: str):
         short_hash=split_line[1],
         date=split_line[2],
         message=message,
-        message_without_backticks=message.replace("`", "'").replace("&#39;", "'").replace('&amp;', "&"),
+        message_without_backticks=message.replace("`", "'").replace("&39;", "'"),
         pr=int(pr) if pr else None,
     )
 
@@ -261,7 +261,7 @@ def generate_issue_content(
                     pr = repo.get_issue(pr_number)  # (same fields as PR)
                 except UnknownObjectException:
                     console.print(f"[red]The PR #{pr_number} could not be found[/]")
-                    continue
+                continue
 
             # Ignore doc-only and skipped PRs
             label_names = [label.name for label in pr.labels]

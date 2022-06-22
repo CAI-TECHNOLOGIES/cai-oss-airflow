@@ -68,14 +68,10 @@ function build_images::add_build_args_for_remote_install() {
         AIRFLOW_BRANCH_FOR_PYPI_PRELOADING="v2-0-test"
     elif [[ ${AIRFLOW_VERSION} == 'v2-1-test' ]]; then
         AIRFLOW_BRANCH_FOR_PYPI_PRELOADING="v2-1-test"
-    elif [[ ${AIRFLOW_VERSION} == 'v2-2-test' ]]; then
-        AIRFLOW_BRANCH_FOR_PYPI_PRELOADING="v2-2-test"
     elif [[ ${AIRFLOW_VERSION} =~ v?2\.0* ]]; then
         AIRFLOW_BRANCH_FOR_PYPI_PRELOADING="v2-0-stable"
     elif [[ ${AIRFLOW_VERSION} =~ v?2\.1* ]]; then
         AIRFLOW_BRANCH_FOR_PYPI_PRELOADING="v2-1-stable"
-    elif [[ ${AIRFLOW_VERSION} =~ v?2\.2* ]]; then
-        AIRFLOW_BRANCH_FOR_PYPI_PRELOADING="v2-2-stable"
     else
         AIRFLOW_BRANCH_FOR_PYPI_PRELOADING=${DEFAULT_BRANCH}
     fi
@@ -86,6 +82,36 @@ function build_images::add_build_args_for_remote_install() {
 function build_images::get_airflow_version_from_production_image() {
     docker run --entrypoint /bin/bash "${AIRFLOW_PROD_IMAGE}" -c 'echo "${AIRFLOW_VERSION}"'
 }
+
+# Removes the "Forced answer" (yes/no/quit) given previously, unless you specifically want to remember it.
+#
+# This is the default behaviour of all rebuild scripts to ask independently whether you want to
+# rebuild the image or not. Sometimes however we want to remember answer previously given. For
+# example if you answered "no" to rebuild the image, the assumption is that you do not
+# want to rebuild image also for other rebuilds in the same pre-commit execution.
+#
+# All the pre-commit checks therefore have `export REMEMBER_LAST_ANSWER="true"` set
+# So that in case they are run in a sequence of commits they will not rebuild. Similarly if your most
+# recent answer was "no" and you run `pre-commit run mypy` (for example) it will also reuse the
+# "no" answer given previously. This happens until you run any of the breeze commands or run all
+# pre-commits `pre-commit run` - then the "LAST_FORCE_ANSWER_FILE" will be removed and you will
+# be asked again.
+function build_images::forget_last_answer() {
+    if [[ ${REMEMBER_LAST_ANSWER:="false"} != "true" ]]; then
+        verbosity::print_info
+        verbosity::print_info "Forgetting last answer from ${LAST_FORCE_ANSWER_FILE}:"
+        verbosity::print_info
+        rm -f "${LAST_FORCE_ANSWER_FILE}"
+    else
+        if [[ -f "${LAST_FORCE_ANSWER_FILE}" ]]; then
+            verbosity::print_info
+            verbosity::print_info "Still remember last answer from ${LAST_FORCE_ANSWER_FILE}:"
+            verbosity::print_info "$(cat "${LAST_FORCE_ANSWER_FILE}")"
+            verbosity::print_info
+        fi
+    fi
+}
+
 
 function build_images::reconfirm_rebuilding_if_not_rebased() {
     local latest_main_commit_sha
@@ -98,7 +124,7 @@ function build_images::reconfirm_rebuilding_if_not_rebased() {
          echo
          echo "${COLOR_YELLOW}It is STRONGLY RECOMMENDED that you rebase your code first!${COLOR_RESET}"
          echo
-         "${AIRFLOW_SOURCES}/scripts/tools/confirm" "You are really sure you want to rebuild ${THE_IMAGE_TYPE}-python${PYTHON_MAJOR_MINOR_VERSION}"
+         "${AIRFLOW_SOURCES}/confirm" "You are really sure you want to rebuild ${THE_IMAGE_TYPE}-python${PYTHON_MAJOR_MINOR_VERSION}"
          RES=$?
     fi
 }
@@ -112,7 +138,7 @@ function build_images::encourage_rebuilding_on_modified_files() {
     set +u
     if [[ ${#MODIFIED_FILES[@]} != "" ]]; then
         echo
-        echo "${COLOR_YELLOW}The CI image for Python ${PYTHON_MAJOR_MINOR_VERSION} might be outdated${COLOR_RESET}"
+        echo "${COLOR_YELLOW}The CI image for Python ${PYTHON_MAJOR_MINOR_VERSION} image might be outdated${COLOR_RESET}"
         echo
         echo "${COLOR_BLUE}Please run this command at earliest convenience: ${COLOR_RESET}"
         echo
@@ -135,7 +161,7 @@ function build_images::confirm_rebuilding_on_modified_files() {
     # Make sure to use output of tty rather than stdin/stdout when available - this way confirm
     # will works also in case of pre-commits (git does not pass stdin/stdout to pre-commit hooks)
     # shellcheck disable=SC2094
-    "${AIRFLOW_SOURCES}/scripts/tools/confirm" "PULL & BUILD the image ${THE_IMAGE_TYPE}-python${PYTHON_MAJOR_MINOR_VERSION}"
+    "${AIRFLOW_SOURCES}/confirm" "PULL & BUILD the image ${THE_IMAGE_TYPE}-python${PYTHON_MAJOR_MINOR_VERSION}"
     RES=$?
     if [[ ${RES} == "0" ]]; then
         build_images::reconfirm_rebuilding_if_not_rebased
@@ -148,6 +174,12 @@ function build_images::confirm_rebuilding_on_modified_files() {
 # So that the script works also from within pre-commit run via git hooks - where stdin is not
 # available - it tries to find usable terminal and ask the user via this terminal.
 function build_images::confirm_image_rebuild() {
+    if [[ -f "${LAST_FORCE_ANSWER_FILE}" ]]; then
+        # set variable from last answered response given in the same pre-commit run - so that it can be
+        # answered in the first pre-commit check (build) and then used in another (mypy/flake8 etc).
+        # shellcheck disable=SC1090
+        source "${LAST_FORCE_ANSWER_FILE}"
+    fi
     set +e
     local RES
     if [[ ${CI:="false"} == "true" ]]; then
@@ -199,12 +231,13 @@ function build_images::confirm_image_rebuild() {
         # Force "no" also to subsequent questions so that if you answer it once, you are not asked
         # For all other pre-commits and you will continue using the images you already have
         export FORCE_ANSWER_TO_QUESTIONS="no"
+        echo 'export FORCE_ANSWER_TO_QUESTIONS="no"' >"${LAST_FORCE_ANSWER_FILE}"
     elif [[ ${RES} == "2" ]]; then
         echo
         echo  "${COLOR_RED}ERROR: The ${THE_IMAGE_TYPE} needs to be rebuilt - it is outdated.   ${COLOR_RESET}"
         echo """
 
-   Make sure you build the image by running:
+   Make sure you build the images by running:
 
       ./breeze --python ${PYTHON_MAJOR_MINOR_VERSION} build-image
 
@@ -263,7 +296,7 @@ function build_images::get_github_container_registry_image_prefix() {
 
 function build_images::get_docker_cache_image_names() {
     # Python base image to use
-    export PYTHON_BASE_IMAGE="python:${PYTHON_MAJOR_MINOR_VERSION}-slim-${DEBIAN_VERSION}"
+    export PYTHON_BASE_IMAGE="python:${PYTHON_MAJOR_MINOR_VERSION}-slim-buster"
 
     local image_name
     image_name="ghcr.io/$(build_images::get_github_container_registry_image_prefix)"
@@ -359,20 +392,12 @@ function build_images::prepare_ci_build() {
     permissions::fix_group_permissions
 }
 
-function build_images::clean_build_cache() {
-    mkdir -pv "${BUILD_CACHE_DIR}"
-    rm -rf "${BUILD_CACHE_DIR}"
-    rm -rf "${AIRFLOW_SOURCES}/docker-context-files/*"
-}
-
 # Only rebuilds CI image if needed. It checks if the docker image build is needed
 # because any of the important source files (from scripts/ci/libraries/_initialization.sh) has
 # changed or in any of the edge cases (docker image removed, .build cache removed etc.
 # In case rebuild is needed, it determines (by comparing layers in local and remote image)
 # Whether pull is needed before rebuild.
 function build_images::rebuild_ci_image_if_needed() {
-    local needs_docker_build="false"
-    local force_build="false"
     if [[ -f "${BUILT_CI_IMAGE_FLAG_FILE}" ]]; then
         verbosity::print_info
         verbosity::print_info "CI image already built locally."
@@ -381,12 +406,13 @@ function build_images::rebuild_ci_image_if_needed() {
         verbosity::print_info
         verbosity::print_info "CI image not built locally: force pulling and building"
         verbosity::print_info
-        force_build="true"
+        export FORCE_BUILD="true"
     fi
+    local needs_docker_build="false"
     md5sum::check_if_docker_build_is_needed
     if [[ ${needs_docker_build} == "true" ]]; then
         SKIP_REBUILD="false"
-        if [[ ${CI:=} != "true" && "${force_build:=}" != "true" ]]; then
+        if [[ ${CI:=} != "true" && "${FORCE_BUILD:=}" != "true" ]]; then
             build_images::confirm_image_rebuild
         fi
         if [[ ${SKIP_REBUILD} != "true" ]]; then
@@ -482,7 +508,6 @@ function build_images::build_ci_image() {
     docker_v "${BUILD_COMMAND[@]}" \
         "${extra_docker_ci_flags[@]}" \
         --pull \
-        --platform "${PLATFORM}" \
         --build-arg PYTHON_BASE_IMAGE="${PYTHON_BASE_IMAGE}" \
         --build-arg AIRFLOW_VERSION="${AIRFLOW_VERSION}" \
         --build-arg AIRFLOW_BRANCH="${BRANCH_NAME}" \
@@ -510,10 +535,6 @@ function build_images::build_ci_image() {
         -t "${AIRFLOW_CI_IMAGE}" \
         --target "main" \
         . -f Dockerfile.ci
-    if [[ ${PREPARE_BUILDX_CACHE} == "true" ]]; then
-        # Push the image as "latest" so that it can be used in Breeze
-        docker_v push "${AIRFLOW_CI_IMAGE}"
-    fi
     set -u
     if [[ -n "${IMAGE_TAG=}" ]]; then
         echo "Tagging additionally image ${AIRFLOW_CI_IMAGE} with ${IMAGE_TAG}"
@@ -631,11 +652,9 @@ function build_images::build_prod_images() {
     docker_v "${BUILD_COMMAND[@]}" \
         "${EXTRA_DOCKER_PROD_BUILD_FLAGS[@]}" \
         --pull \
-        --platform "${PLATFORM}" \
         --build-arg PYTHON_BASE_IMAGE="${PYTHON_BASE_IMAGE}" \
         --build-arg INSTALL_MYSQL_CLIENT="${INSTALL_MYSQL_CLIENT}" \
         --build-arg INSTALL_MSSQL_CLIENT="${INSTALL_MSSQL_CLIENT}" \
-        --build-arg INSTALL_POSTGRES_CLIENT="${INSTALL_POSTGRES_CLIENT}" \
         --build-arg ADDITIONAL_AIRFLOW_EXTRAS="${ADDITIONAL_AIRFLOW_EXTRAS}" \
         --build-arg ADDITIONAL_PYTHON_DEPS="${ADDITIONAL_PYTHON_DEPS}" \
         --build-arg INSTALL_PROVIDERS_FROM_SOURCES="${INSTALL_PROVIDERS_FROM_SOURCES}" \
@@ -665,10 +684,6 @@ function build_images::build_prod_images() {
         -t "${AIRFLOW_PROD_IMAGE}" \
         --target "main" \
         . -f Dockerfile
-    if [[ ${PREPARE_BUILDX_CACHE} == "true" ]]; then
-        # Push the image as "latest" so that it can be used in Breeze
-        docker_v push "${AIRFLOW_PROD_IMAGE}"
-    fi
     set -u
     if [[ -n "${IMAGE_TAG=}" ]]; then
         echo "Tagging additionally image ${AIRFLOW_PROD_IMAGE} with ${IMAGE_TAG}"
@@ -725,35 +740,6 @@ function build_images::cleanup_docker_context_files() {
     mkdir -pv "${AIRFLOW_SOURCES}/docker-context-files"
     rm -f "${AIRFLOW_SOURCES}/docker-context-files/"*.{whl,tar.gz}
 }
-
-# PRe-commit version of confirming the ci image that is used in pre-commits
-# it displays additional information - what the user should do in order to bring the local images
-# back to state that pre-commit will be happy with
-function build_images::rebuild_ci_image_if_confirmed_for_pre_commit() {
-    local needs_docker_build="false"
-    export THE_IMAGE_TYPE="CI"
-
-    md5sum::check_if_docker_build_is_needed
-
-    if [[ ${needs_docker_build} == "true" ]]; then
-        verbosity::print_info
-        verbosity::print_info "Docker image pull and build is needed!"
-        verbosity::print_info
-    else
-        verbosity::print_info
-        verbosity::print_info "Docker image pull and build is not needed!"
-        verbosity::print_info
-    fi
-
-    if [[ "${needs_docker_build}" == "true" ]]; then
-        SKIP_REBUILD="false"
-        build_images::confirm_image_rebuild
-        if [[ ${SKIP_REBUILD} != "true" ]]; then
-            build_images::rebuild_ci_image_if_needed
-        fi
-    fi
-}
-
 
 function build_images::build_prod_images_from_locally_built_airflow_packages() {
     # We do not install from PyPI

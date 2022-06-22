@@ -16,7 +16,7 @@
     under the License.
 
 
-.. _howto/operator:AthenaOperator:
+.. _howto/operator:AWSAthenaOperator:
 
 Amazon Athena Operator
 ======================
@@ -33,7 +33,7 @@ Prerequisite Tasks
 Using Operator
 --------------
 Use the
-:class:`~airflow.providers.amazon.aws.operators.athena.AthenaOperator`
+:class:`~airflow.providers.amazon.aws.operators.athena.AWSAthenaOperator`
 to run a query in Amazon Athena.  To get started with Amazon Athena please visit
 `aws.amazon.com/athena <https://aws.amazon.com/athena>`_
 

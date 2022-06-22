@@ -24,7 +24,6 @@ from google.cloud.dataproc_v1 import JobStatus
 
 from airflow.exceptions import AirflowException
 from airflow.providers.google.cloud.hooks.dataproc import DataprocHook, DataProcJobBuilder
-from airflow.providers.google.common.consts import CLIENT_INFO
 from airflow.version import version
 
 AIRFLOW_VERSION = "v" + version.replace(".", "-").replace("+", "-")
@@ -62,28 +61,33 @@ class TestDataprocHook(unittest.TestCase):
             self.hook = DataprocHook(gcp_conn_id="test")
 
     @mock.patch(DATAPROC_STRING.format("DataprocHook._get_credentials"))
+    @mock.patch(DATAPROC_STRING.format("DataprocHook.client_info"), new_callable=mock.PropertyMock)
     @mock.patch(DATAPROC_STRING.format("ClusterControllerClient"))
-    def test_get_cluster_client(self, mock_client, mock_get_credentials):
+    def test_get_cluster_client(self, mock_client, mock_client_info, mock_get_credentials):
         self.hook.get_cluster_client(region=GCP_LOCATION)
         mock_client.assert_called_once_with(
             credentials=mock_get_credentials.return_value,
-            client_info=CLIENT_INFO,
+            client_info=mock_client_info.return_value,
             client_options=None,
         )
 
     @mock.patch(DATAPROC_STRING.format("DataprocHook._get_credentials"))
+    @mock.patch(DATAPROC_STRING.format("DataprocHook.client_info"), new_callable=mock.PropertyMock)
     @mock.patch(DATAPROC_STRING.format("ClusterControllerClient"))
-    def test_get_cluster_client_region(self, mock_client, mock_get_credentials):
+    def test_get_cluster_client_region(self, mock_client, mock_client_info, mock_get_credentials):
         self.hook.get_cluster_client(region='region1')
         mock_client.assert_called_once_with(
             credentials=mock_get_credentials.return_value,
-            client_info=CLIENT_INFO,
+            client_info=mock_client_info.return_value,
             client_options={'api_endpoint': 'region1-dataproc.googleapis.com:443'},
         )
 
     @mock.patch(DATAPROC_STRING.format("DataprocHook._get_credentials"))
+    @mock.patch(DATAPROC_STRING.format("DataprocHook.client_info"), new_callable=mock.PropertyMock)
     @mock.patch(DATAPROC_STRING.format("ClusterControllerClient"))
-    def test_get_cluster_client_region_deprecation_warning(self, mock_client, mock_get_credentials):
+    def test_get_cluster_client_region_deprecation_warning(
+        self, mock_client, mock_client_info, mock_get_credentials
+    ):
         warning_message = (
             "Parameter `location` will be deprecated. "
             "Please provide value through `region` parameter instead."
@@ -92,34 +96,39 @@ class TestDataprocHook(unittest.TestCase):
             self.hook.get_cluster_client(location='region1')
             mock_client.assert_called_once_with(
                 credentials=mock_get_credentials.return_value,
-                client_info=CLIENT_INFO,
+                client_info=mock_client_info.return_value,
                 client_options={'api_endpoint': 'region1-dataproc.googleapis.com:443'},
             )
             assert warning_message == str(warnings[0].message)
 
     @mock.patch(DATAPROC_STRING.format("DataprocHook._get_credentials"))
+    @mock.patch(DATAPROC_STRING.format("DataprocHook.client_info"), new_callable=mock.PropertyMock)
     @mock.patch(DATAPROC_STRING.format("WorkflowTemplateServiceClient"))
-    def test_get_template_client_global(self, mock_client, mock_get_credentials):
+    def test_get_template_client_global(self, mock_client, mock_client_info, mock_get_credentials):
         _ = self.hook.get_template_client()
         mock_client.assert_called_once_with(
             credentials=mock_get_credentials.return_value,
-            client_info=CLIENT_INFO,
+            client_info=mock_client_info.return_value,
             client_options=None,
         )
 
     @mock.patch(DATAPROC_STRING.format("DataprocHook._get_credentials"))
+    @mock.patch(DATAPROC_STRING.format("DataprocHook.client_info"), new_callable=mock.PropertyMock)
     @mock.patch(DATAPROC_STRING.format("WorkflowTemplateServiceClient"))
-    def test_get_template_client_region(self, mock_client, mock_get_credentials):
+    def test_get_template_client_region(self, mock_client, mock_client_info, mock_get_credentials):
         _ = self.hook.get_template_client(region='region1')
         mock_client.assert_called_once_with(
             credentials=mock_get_credentials.return_value,
-            client_info=CLIENT_INFO,
+            client_info=mock_client_info.return_value,
             client_options={'api_endpoint': 'region1-dataproc.googleapis.com:443'},
         )
 
     @mock.patch(DATAPROC_STRING.format("DataprocHook._get_credentials"))
+    @mock.patch(DATAPROC_STRING.format("DataprocHook.client_info"), new_callable=mock.PropertyMock)
     @mock.patch(DATAPROC_STRING.format("WorkflowTemplateServiceClient"))
-    def test_get_template_client_region_deprecation_warning(self, mock_client, mock_get_credentials):
+    def test_get_template_client_region_deprecation_warning(
+        self, mock_client, mock_client_info, mock_get_credentials
+    ):
         warning_message = (
             "Parameter `location` will be deprecated. "
             "Please provide value through `region` parameter instead."
@@ -128,34 +137,39 @@ class TestDataprocHook(unittest.TestCase):
             _ = self.hook.get_template_client(location='region1')
             mock_client.assert_called_once_with(
                 credentials=mock_get_credentials.return_value,
-                client_info=CLIENT_INFO,
+                client_info=mock_client_info.return_value,
                 client_options={'api_endpoint': 'region1-dataproc.googleapis.com:443'},
             )
             assert warning_message == str(warnings[0].message)
 
     @mock.patch(DATAPROC_STRING.format("DataprocHook._get_credentials"))
+    @mock.patch(DATAPROC_STRING.format("DataprocHook.client_info"), new_callable=mock.PropertyMock)
     @mock.patch(DATAPROC_STRING.format("JobControllerClient"))
-    def test_get_job_client(self, mock_client, mock_get_credentials):
+    def test_get_job_client(self, mock_client, mock_client_info, mock_get_credentials):
         self.hook.get_job_client(region=GCP_LOCATION)
         mock_client.assert_called_once_with(
             credentials=mock_get_credentials.return_value,
-            client_info=CLIENT_INFO,
+            client_info=mock_client_info.return_value,
             client_options=None,
         )
 
     @mock.patch(DATAPROC_STRING.format("DataprocHook._get_credentials"))
+    @mock.patch(DATAPROC_STRING.format("DataprocHook.client_info"), new_callable=mock.PropertyMock)
     @mock.patch(DATAPROC_STRING.format("JobControllerClient"))
-    def test_get_job_client_region(self, mock_client, mock_get_credentials):
+    def test_get_job_client_region(self, mock_client, mock_client_info, mock_get_credentials):
         self.hook.get_job_client(region='region1')
         mock_client.assert_called_once_with(
             credentials=mock_get_credentials.return_value,
-            client_info=CLIENT_INFO,
+            client_info=mock_client_info.return_value,
             client_options={'api_endpoint': 'region1-dataproc.googleapis.com:443'},
         )
 
     @mock.patch(DATAPROC_STRING.format("DataprocHook._get_credentials"))
+    @mock.patch(DATAPROC_STRING.format("DataprocHook.client_info"), new_callable=mock.PropertyMock)
     @mock.patch(DATAPROC_STRING.format("JobControllerClient"))
-    def test_get_job_client_region_deprecation_warning(self, mock_client, mock_get_credentials):
+    def test_get_job_client_region_deprecation_warning(
+        self, mock_client, mock_client_info, mock_get_credentials
+    ):
         warning_message = (
             "Parameter `location` will be deprecated. "
             "Please provide value through `region` parameter instead."
@@ -164,34 +178,39 @@ class TestDataprocHook(unittest.TestCase):
             self.hook.get_job_client(location='region1')
             mock_client.assert_called_once_with(
                 credentials=mock_get_credentials.return_value,
-                client_info=CLIENT_INFO,
+                client_info=mock_client_info.return_value,
                 client_options={'api_endpoint': 'region1-dataproc.googleapis.com:443'},
             )
             assert warning_message == str(warnings[0].message)
 
     @mock.patch(DATAPROC_STRING.format("DataprocHook._get_credentials"))
+    @mock.patch(DATAPROC_STRING.format("DataprocHook.client_info"), new_callable=mock.PropertyMock)
     @mock.patch(DATAPROC_STRING.format("BatchControllerClient"))
-    def test_get_batch_client(self, mock_client, mock_get_credentials):
+    def test_get_batch_client(self, mock_client, mock_client_info, mock_get_credentials):
         self.hook.get_batch_client(region=GCP_LOCATION)
         mock_client.assert_called_once_with(
             credentials=mock_get_credentials.return_value,
-            client_info=CLIENT_INFO,
+            client_info=mock_client_info.return_value,
             client_options=None,
         )
 
     @mock.patch(DATAPROC_STRING.format("DataprocHook._get_credentials"))
+    @mock.patch(DATAPROC_STRING.format("DataprocHook.client_info"), new_callable=mock.PropertyMock)
     @mock.patch(DATAPROC_STRING.format("BatchControllerClient"))
-    def test_get_batch_client_region(self, mock_client, mock_get_credentials):
+    def test_get_batch_client_region(self, mock_client, mock_client_info, mock_get_credentials):
         self.hook.get_batch_client(region='region1')
         mock_client.assert_called_once_with(
             credentials=mock_get_credentials.return_value,
-            client_info=CLIENT_INFO,
+            client_info=mock_client_info.return_value,
             client_options={'api_endpoint': 'region1-dataproc.googleapis.com:443'},
         )
 
     @mock.patch(DATAPROC_STRING.format("DataprocHook._get_credentials"))
+    @mock.patch(DATAPROC_STRING.format("DataprocHook.client_info"), new_callable=mock.PropertyMock)
     @mock.patch(DATAPROC_STRING.format("BatchControllerClient"))
-    def test_get_batch_client_region_deprecation_warning(self, mock_client, mock_get_credentials):
+    def test_get_batch_client_region_deprecation_warning(
+        self, mock_client, mock_client_info, mock_get_credentials
+    ):
         warning_message = (
             "Parameter `location` will be deprecated. "
             "Please provide value through `region` parameter instead."
@@ -200,7 +219,7 @@ class TestDataprocHook(unittest.TestCase):
             self.hook.get_batch_client(location='region1')
             mock_client.assert_called_once_with(
                 credentials=mock_get_credentials.return_value,
-                client_info=CLIENT_INFO,
+                client_info=mock_client_info.return_value,
                 client_options={'api_endpoint': 'region1-dataproc.googleapis.com:443'},
             )
             assert warning_message == str(warnings[0].message)
@@ -222,7 +241,7 @@ class TestDataprocHook(unittest.TestCase):
                 cluster=CLUSTER,
                 request_id=None,
             ),
-            metadata=(),
+            metadata=None,
             retry=None,
             timeout=None,
         )
@@ -239,7 +258,7 @@ class TestDataprocHook(unittest.TestCase):
                 cluster_uuid=None,
                 request_id=None,
             ),
-            metadata=(),
+            metadata=None,
             retry=None,
             timeout=None,
         )
@@ -254,7 +273,7 @@ class TestDataprocHook(unittest.TestCase):
                 region=GCP_LOCATION,
                 cluster_name=CLUSTER_NAME,
             ),
-            metadata=(),
+            metadata=None,
             retry=None,
             timeout=None,
         )
@@ -270,7 +289,7 @@ class TestDataprocHook(unittest.TestCase):
                 region=GCP_LOCATION,
                 cluster_name=CLUSTER_NAME,
             ),
-            metadata=(),
+            metadata=None,
             retry=None,
             timeout=None,
         )
@@ -288,7 +307,7 @@ class TestDataprocHook(unittest.TestCase):
                 filter=filter_,
                 page_size=None,
             ),
-            metadata=(),
+            metadata=None,
             retry=None,
             timeout=None,
         )
@@ -314,7 +333,7 @@ class TestDataprocHook(unittest.TestCase):
                 graceful_decommission_timeout=None,
                 request_id=None,
             ),
-            metadata=(),
+            metadata=None,
             retry=None,
             timeout=None,
         )
@@ -345,7 +364,7 @@ class TestDataprocHook(unittest.TestCase):
                     graceful_decommission_timeout=None,
                     request_id=None,
                 ),
-                metadata=(),
+                metadata=None,
                 retry=None,
                 timeout=None,
             )
@@ -513,7 +532,7 @@ class TestDataprocHook(unittest.TestCase):
             ),
             retry=None,
             timeout=None,
-            metadata=(),
+            metadata=None,
         )
 
     @mock.patch(DATAPROC_STRING.format("DataprocHook.get_job_client"))
@@ -533,7 +552,7 @@ class TestDataprocHook(unittest.TestCase):
                 ),
                 retry=None,
                 timeout=None,
-                metadata=(),
+                metadata=None,
             )
             assert warning_message == str(warnings[0].message)
 
@@ -553,7 +572,7 @@ class TestDataprocHook(unittest.TestCase):
             ),
             retry=None,
             timeout=None,
-            metadata=(),
+            metadata=None,
         )
 
     @mock.patch(DATAPROC_STRING.format("DataprocHook.get_job_client"))
@@ -574,7 +593,7 @@ class TestDataprocHook(unittest.TestCase):
                 ),
                 retry=None,
                 timeout=None,
-                metadata=(),
+                metadata=None,
             )
             assert warning_message == str(warnings[0].message)
         with pytest.raises(TypeError):
@@ -601,7 +620,7 @@ class TestDataprocHook(unittest.TestCase):
             ),
             retry=None,
             timeout=None,
-            metadata=(),
+            metadata=None,
         )
 
     @mock.patch(DATAPROC_STRING.format("DataprocHook.get_job_client"))
@@ -617,7 +636,7 @@ class TestDataprocHook(unittest.TestCase):
             ),
             retry=None,
             timeout=None,
-            metadata=(),
+            metadata=None,
         )
 
     @mock.patch(DATAPROC_STRING.format("DataprocHook.get_job_client"))
@@ -637,7 +656,7 @@ class TestDataprocHook(unittest.TestCase):
                 ),
                 retry=None,
                 timeout=None,
-                metadata=(),
+                metadata=None,
             )
             assert warning_message == str(warnings[0].message)
 
@@ -657,7 +676,7 @@ class TestDataprocHook(unittest.TestCase):
                 batch_id=BATCH_ID,
                 request_id=None,
             ),
-            metadata=(),
+            metadata="",
             retry=None,
             timeout=None,
         )
@@ -674,7 +693,7 @@ class TestDataprocHook(unittest.TestCase):
             request=dict(
                 name=BATCH_NAME.format(GCP_PROJECT, GCP_LOCATION, BATCH_ID),
             ),
-            metadata=(),
+            metadata=None,
             retry=None,
             timeout=None,
         )
@@ -691,7 +710,7 @@ class TestDataprocHook(unittest.TestCase):
             request=dict(
                 name=BATCH_NAME.format(GCP_PROJECT, GCP_LOCATION, BATCH_ID),
             ),
-            metadata=(),
+            metadata=None,
             retry=None,
             timeout=None,
         )
@@ -709,7 +728,7 @@ class TestDataprocHook(unittest.TestCase):
                 page_size=None,
                 page_token=None,
             ),
-            metadata=(),
+            metadata=None,
             retry=None,
             timeout=None,
         )

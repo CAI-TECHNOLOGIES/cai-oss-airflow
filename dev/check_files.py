@@ -20,7 +20,7 @@ import re
 from itertools import product
 from typing import List
 
-import rich_click as click
+import click as click
 from rich import print
 
 PROVIDERS_DOCKER = """\

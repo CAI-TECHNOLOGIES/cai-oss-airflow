@@ -27,7 +27,10 @@ from jinja2 import StrictUndefined
 
 from airflow.models import DAG, DagRun, TaskInstance
 from airflow.models.xcom import XCOM_RETURN_KEY
-from airflow.providers.amazon.aws.operators.emr import EmrClusterLink, EmrCreateJobFlowOperator
+from airflow.providers.amazon.aws.operators.emr_create_job_flow import (
+    EmrClusterLink,
+    EmrCreateJobFlowOperator,
+)
 from airflow.serialization.serialized_objects import SerializedDAG
 from airflow.utils import timezone
 from tests.test_utils import AIRFLOW_MAIN_FOLDER
@@ -175,7 +178,7 @@ def test_operator_extra_links(dag_maker, create_task_instance_of_operator):
     deserialized_task = deserialized_dag.task_dict[TASK_ID]
 
     assert serialized_dag["dag"]["tasks"][0]["_operator_extra_links"] == [
-        {"airflow.providers.amazon.aws.operators.emr.EmrClusterLink": {}}
+        {"airflow.providers.amazon.aws.operators.emr_create_job_flow.EmrClusterLink": {}}
     ], "Operator links should exist for serialized DAG"
 
     assert isinstance(

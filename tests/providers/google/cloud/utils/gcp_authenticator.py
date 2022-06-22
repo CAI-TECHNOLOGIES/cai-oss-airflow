@@ -26,14 +26,13 @@ from airflow.models import Connection
 
 # Please keep these variables in alphabetical order.
 from tests.test_utils import AIRFLOW_MAIN_FOLDER
-from tests.test_utils.logging_command_executor import CommandExecutor
+from tests.test_utils.logging_command_executor import LoggingCommandExecutor
 
 GCP_AI_KEY = 'gcp_ai.json'
 GCP_AUTOML_KEY = 'gcp_automl.json'
 GCP_BIGQUERY_KEY = 'gcp_bigquery.json'
 GCP_BIGTABLE_KEY = 'gcp_bigtable.json'
 GCP_CLOUD_BUILD_KEY = 'gcp_cloud_build.json'
-GCP_CLOUD_COMPOSER = 'gcp_cloud_composer.json'
 GCP_CLOUDSQL_KEY = 'gcp_cloudsql.json'
 GCP_COMPUTE_KEY = 'gcp_compute.json'
 GCP_COMPUTE_SSH_KEY = 'gcp_compute_ssh.json'
@@ -55,7 +54,6 @@ GCP_SECRET_MANAGER_KEY = 'gcp_secret_manager.json'
 GCP_SPANNER_KEY = 'gcp_spanner.json'
 GCP_STACKDRIVER = 'gcp_stackdriver.json'
 GCP_TASKS_KEY = 'gcp_tasks.json'
-GCP_VERTEX_AI_KEY = 'gcp_vertex_ai.json'
 GCP_WORKFLOWS_KEY = "gcp_workflows.json"
 GMP_KEY = 'gmp.json'
 G_FIREBASE_KEY = 'g_firebase.json'
@@ -67,7 +65,7 @@ SCOPE_EXTRA = 'extra__google_cloud_platform__scope'
 PROJECT_EXTRA = 'extra__google_cloud_platform__project'
 
 
-class GcpAuthenticator(CommandExecutor):
+class GcpAuthenticator(LoggingCommandExecutor):
     """
     Initialises the authenticator.
 
@@ -170,7 +168,9 @@ class GcpAuthenticator(CommandExecutor):
             raise AirflowException("The gcp_key is not set!")
         if not os.path.isfile(self.full_key_path):
             raise AirflowException(
-                f"The key {self.gcp_key} could not be found. Please copy it to the {self.full_key_path} path."
+                "The key {} could not be found. Please copy it to the {} path.".format(
+                    self.gcp_key, self.full_key_path
+                )
             )
 
     def gcp_authenticate(self):

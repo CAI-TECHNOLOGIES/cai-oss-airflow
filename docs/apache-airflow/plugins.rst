@@ -27,7 +27,7 @@ features to its core by simply dropping files in your
 The python modules in the ``plugins`` folder get imported, and **macros** and web **views**
 get integrated to Airflow's main collections and become available for use.
 
-To troubleshoot issues with plugins, you can use the ``airflow plugins`` command.
+To troubleshoot issue with plugins, you can use ``airflow plugins`` command.
 This command dumps information about loaded plugins.
 
 .. versionchanged:: 2.0
@@ -141,11 +141,6 @@ looks like:
 
         # A list of timetable classes to register so they can be used in DAGs.
         timetables = []
-
-        # A list of Listeners that plugin provides. Listeners can register to
-        # listen to particular events that happen in Airflow, like
-        # TaskInstance state changes. Listeners are python modules.
-        listeners = []
 
 You can derive it by inheritance (please refer to the example below). In the example, all options have been
 defined as class attributes, but you can also define them as properties if you need to perform
@@ -305,7 +300,7 @@ Plugins as Python packages
 --------------------------
 
 It is possible to load plugins via `setuptools entrypoint <https://packaging.python.org/guides/creating-and-discovering-plugins/#using-package-metadata>`_ mechanism. To do this link
-your plugin using an entrypoint in your package. If the package is installed, Airflow
+your plugin using an entrypoint in your package. If the package is installed, airflow
 will automatically load the registered plugins from the entrypoint list.
 
 .. note::

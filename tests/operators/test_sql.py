@@ -23,7 +23,7 @@ from unittest import mock
 import pytest
 
 from airflow.exceptions import AirflowException
-from airflow.models import DAG, Connection, DagRun, TaskInstance as TI, XCom
+from airflow.models import DAG, Connection, DagRun, TaskInstance as TI
 from airflow.operators.dummy import DummyOperator
 from airflow.operators.sql import (
     BranchSQLOperator,
@@ -90,29 +90,6 @@ class TestSQLCheckOperatorDbHook:
         with pytest.raises(AirflowException, match=r"The connection type is not supported"):
             self._operator._hook
 
-    def test_sql_operator_hook_params_snowflake(self, mock_get_conn):
-        mock_get_conn.return_value = Connection(conn_id='snowflake_default', conn_type='snowflake')
-        self._operator.hook_params = {
-            'warehouse': 'warehouse',
-            'database': 'database',
-            'role': 'role',
-            'schema': 'schema',
-        }
-        assert self._operator._hook.conn_type == 'snowflake'
-        assert self._operator._hook.warehouse == 'warehouse'
-        assert self._operator._hook.database == 'database'
-        assert self._operator._hook.role == 'role'
-        assert self._operator._hook.schema == 'schema'
-
-    def test_sql_operator_hook_params_biguery(self, mock_get_conn):
-        mock_get_conn.return_value = Connection(
-            conn_id='google_cloud_bigquery_default', conn_type='gcpbigquery'
-        )
-        self._operator.hook_params = {'use_legacy_sql': True, 'location': 'us-east1'}
-        assert self._operator._hook.conn_type == 'gcpbigquery'
-        assert self._operator._hook.use_legacy_sql
-        assert self._operator._hook.location == 'us-east1'
-
 
 class TestCheckOperator(unittest.TestCase):
     def setUp(self):
@@ -123,14 +100,14 @@ class TestCheckOperator(unittest.TestCase):
         mock_get_db_hook.return_value.get_first.return_value = []
 
         with pytest.raises(AirflowException, match=r"The query returned None"):
-            self._operator.execute({})
+            self._operator.execute()
 
     @mock.patch.object(SQLCheckOperator, "get_db_hook")
     def test_execute_not_all_records_are_true(self, mock_get_db_hook):
         mock_get_db_hook.return_value.get_first.return_value = ["data", ""]
 
         with pytest.raises(AirflowException, match=r"Test failed."):
-            self._operator.execute({})
+            self._operator.execute()
 
 
 class TestValueCheckOperator(unittest.TestCase):
@@ -397,7 +374,6 @@ class TestSqlBranch(TestHiveEnvironment, unittest.TestCase):
         with create_session() as session:
             session.query(DagRun).delete()
             session.query(TI).delete()
-            session.query(XCom).delete()
 
     def setUp(self):
         super().setUp()
@@ -416,7 +392,6 @@ class TestSqlBranch(TestHiveEnvironment, unittest.TestCase):
         with create_session() as session:
             session.query(DagRun).delete()
             session.query(TI).delete()
-            session.query(XCom).delete()
 
     def test_unsupported_conn_type(self):
         """Check if BranchSQLOperator throws an exception for unsupported connection type"""

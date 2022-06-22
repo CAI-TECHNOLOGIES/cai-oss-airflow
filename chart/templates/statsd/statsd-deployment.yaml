@@ -22,7 +22,6 @@
 {{- $nodeSelector := or .Values.statsd.nodeSelector .Values.nodeSelector }}
 {{- $affinity := or .Values.statsd.affinity .Values.affinity }}
 {{- $tolerations := or .Values.statsd.tolerations .Values.tolerations }}
-{{- $securityContext := include "localSecurityContext" .Values.statsd }}
 kind: Deployment
 apiVersion: apps/v1
 metadata:
@@ -57,9 +56,6 @@ spec:
         checksum/statsd-config: {{ include (print $.Template.BasePath "/configmaps/statsd-configmap.yaml") . | sha256sum }}
 {{- end }}
     spec:
-      {{- if .Values.statsd.priorityClassName }}
-      priorityClassName: {{ .Values.statsd.priorityClassName }}
-      {{- end }}
       nodeSelector:
 {{ toYaml $nodeSelector | indent 8 }}
       affinity:
@@ -67,7 +63,8 @@ spec:
       tolerations:
 {{ toYaml $tolerations | indent 8 }}
       serviceAccountName: {{ include "statsd.serviceAccountName" . }}
-      securityContext: {{ $securityContext | nindent 8 }}
+      securityContext:
+        runAsUser: {{ .Values.statsd.uid }}
       restartPolicy: Always
       {{- if or .Values.registry.secretName .Values.registry.connection }}
       imagePullSecrets:

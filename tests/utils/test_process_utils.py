@@ -35,7 +35,7 @@ import pytest
 
 from airflow.exceptions import AirflowException
 from airflow.utils import process_utils
-from airflow.utils.process_utils import check_if_pidfile_process_is_running, execute_in_subprocess
+from airflow.utils.process_utils import check_if_pidfile_process_is_running, execute_in_subprocess, log
 
 
 class TestReapProcessGroup(unittest.TestCase):
@@ -96,22 +96,14 @@ class TestReapProcessGroup(unittest.TestCase):
                 pass
 
 
-class TestExecuteInSubProcess:
-    def test_should_print_all_messages1(self, caplog):
-        execute_in_subprocess(["bash", "-c", "echo CAT; echo KITTY;"])
-        msgs = [record.getMessage() for record in caplog.records]
-        assert ["Executing cmd: bash -c 'echo CAT; echo KITTY;'", 'Output:', 'CAT', 'KITTY'] == msgs
+class TestExecuteInSubProcess(unittest.TestCase):
+    def test_should_print_all_messages1(self):
+        with self.assertLogs(log) as logs:
+            execute_in_subprocess(["bash", "-c", "echo CAT; echo KITTY;"])
 
-    def test_should_print_all_messages_from_cwd(self, caplog, tmp_path):
-        execute_in_subprocess(["bash", "-c", "echo CAT; pwd; echo KITTY;"], cwd=str(tmp_path))
-        msgs = [record.getMessage() for record in caplog.records]
-        assert [
-            "Executing cmd: bash -c 'echo CAT; pwd; echo KITTY;'",
-            'Output:',
-            'CAT',
-            str(tmp_path),
-            'KITTY',
-        ] == msgs
+        msgs = [record.getMessage() for record in logs.records]
+
+        assert ["Executing cmd: bash -c 'echo CAT; echo KITTY;'", 'Output:', 'CAT', 'KITTY'] == msgs
 
     def test_should_raise_exception(self):
         with pytest.raises(CalledProcessError):

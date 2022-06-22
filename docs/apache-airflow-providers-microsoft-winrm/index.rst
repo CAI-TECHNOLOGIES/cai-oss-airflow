@@ -24,12 +24,6 @@ Content
 
 .. toctree::
     :maxdepth: 1
-    :caption: Guides
-
-    Operators <operators>
-
-.. toctree::
-    :maxdepth: 1
     :caption: References
 
     Python API <_api/airflow/providers/microsoft/winrm/index>
@@ -58,7 +52,7 @@ Package apache-airflow-providers-microsoft-winrm
 `Windows Remote Management (WinRM) <https://docs.microsoft.com/en-us/windows/win32/winrm/portal>`__
 
 
-Release: 2.0.2
+Release: 2.0.1
 
 Provider package
 ----------------
@@ -69,7 +63,7 @@ are in ``airflow.providers.microsoft.winrm`` python package.
 Installation
 ------------
 
-You can install this package on top of an existing Airflow 2.1+ installation via
+You can install this package on top of an existing airflow 2.1+ installation via
 ``pip install apache-airflow-providers-microsoft-winrm``
 
 PIP requirements

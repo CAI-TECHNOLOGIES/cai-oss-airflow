@@ -34,13 +34,6 @@ python -m pip install --user pre-commit \
 
 export PATH=~/.local/bin:${PATH}
 
-if [[ ${DO_NOT_FAIL_ON_ERROR=} != "" ]]; then
-    echo
-    echo "Skip failing on error"
-    echo
-    set +e
-fi
-
 if [[ $# == "0" ]]; then
     pre-commit run --all-files --show-diff-on-failure --color always
 else
@@ -48,8 +41,4 @@ else
     do
         pre-commit run "${pre_commit_check}" --all-files --show-diff-on-failure --color always
     done
-fi
-
-if [[ ${DO_NOT_FAIL_ON_ERROR=} != "" ]]; then
-    exit 0
 fi

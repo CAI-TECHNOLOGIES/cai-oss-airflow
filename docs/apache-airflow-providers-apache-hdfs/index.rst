@@ -15,8 +15,8 @@
     specific language governing permissions and limitations
     under the License.
 
-``apache-airflow-providers-apache-hdfs``
-========================================
+``apache-airflow-providers-hdfs``
+=================================
 
 
 Content
@@ -27,7 +27,7 @@ Content
     :caption: Guides
 
     Connection types <connections>
-    Operators <operators/index>
+    Operators <operators>
 
 .. toctree::
     :maxdepth: 1
@@ -54,7 +54,7 @@ Package apache-airflow-providers-apache-hdfs
 and `WebHDFS <https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-hdfs/WebHDFS.html>`__.
 
 
-Release: 2.2.0
+Release: 2.1.1
 
 Provider package
 ----------------
@@ -65,18 +65,17 @@ are in ``airflow.providers.apache.hdfs`` python package.
 Installation
 ------------
 
-You can install this package on top of an existing Airflow 2.1+ installation via
+You can install this package on top of an existing airflow 2.1+ installation via
 ``pip install apache-airflow-providers-apache-hdfs``
 
 PIP requirements
 ----------------
 
-=================================  ==================
-PIP package                        Version required
-=================================  ==================
-``apache-airflow``                 ``>=2.1.0``
-``hdfs[avro,dataframe,kerberos]``  ``>=2.0.4``
+==================  ==================
+PIP package         Version required
+==================  ==================
+``apache-airflow``  ``>=2.1.0``
 ``snakebite-py3``
-=================================  ==================
+==================  ==================
 
 .. include:: ../../airflow/providers/apache/hdfs/CHANGELOG.rst

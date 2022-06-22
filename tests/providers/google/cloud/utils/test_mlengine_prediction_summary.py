@@ -27,7 +27,7 @@ try:
     from airflow.providers.google.cloud.utils import mlengine_prediction_summary
 except ImportError as e:
     if 'apache_beam' in str(e):
-        pytestmark = pytest.mark.skip(f"package apache_beam not present. Skipping all tests in {__name__}")
+        raise unittest.SkipTest(f"package apache_beam not present. Skipping all tests in {__name__}")
 
 
 class TestJsonCode(unittest.TestCase):

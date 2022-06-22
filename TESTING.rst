@@ -80,7 +80,7 @@ Running Unit Tests from Visual Studio Code
 
 To run unit tests from the Visual Studio Code:
 
-1. Using the ``Extensions`` view install Python extension, reload if required
+1. Using the ``Exteinsions`` view install Python extension, reload if required
 
 .. image:: images/vscode_install_python_extension.png
     :align: center
@@ -758,7 +758,7 @@ The typical session for tests with Kubernetes looks like follows:
 
        Airflow source version:  2.0.0.dev0
        Python version:          3.7
-       Backend:                 postgres 10
+       Backend:                 postgres 9.6
 
     No kind clusters found.
 
@@ -798,7 +798,7 @@ The typical session for tests with Kubernetes looks like follows:
 
        Airflow source version:  2.0.0.dev0
        Python version:          3.7
-       Backend:                 postgres 10
+       Backend:                 postgres 9.6
 
     airflow-python-3.7-v1.17.0-control-plane
     airflow-python-3.7-v1.17.0-worker
@@ -1308,7 +1308,9 @@ It will run a backfill job:
 .. code-block:: python
 
   if __name__ == "__main__":
-      dag.clear()
+      from airflow.utils.state import State
+
+      dag.clear(dag_run_state=State.NONE)
       dag.run()
 
 
@@ -1371,3 +1373,53 @@ On the screen you will see database queries for the given test.
 
 SQL query tracking does not work properly if your test runs subprocesses. Only queries from the main process
 are tracked.
+
+BASH Unit Testing (BATS)
+========================
+
+We have started adding tests to cover Bash scripts we have in our codebase.
+The tests are placed in the ``tests\bats`` folder.
+They require BAT CLI to be installed if you want to run them on your
+host or via a Docker image.
+
+Installing BATS CLI
+---------------------
+
+You can find an installation guide as well as information on how to write
+the bash tests in `BATS Installation <https://github.com/bats-core/bats-core#installation>`_.
+
+Running BATS Tests on the Host
+------------------------------
+
+To run all tests:
+
+.. code-block:: bash
+
+   bats -r tests/bats/
+
+To run a single test:
+
+.. code-block:: bash
+
+   bats tests/bats/your_test_file.bats
+
+Running BATS Tests via Docker
+-----------------------------
+
+To run all tests:
+
+.. code-block:: bash
+
+   docker run -it --workdir /airflow -v $(pwd):/airflow  bats/bats:latest -r /airflow/tests/bats
+
+To run a single test:
+
+.. code-block:: bash
+
+   docker run -it --workdir /airflow -v $(pwd):/airflow  bats/bats:latest /airflow/tests/bats/your_test_file.bats
+
+Using BATS
+----------
+
+You can read more about using BATS CLI and writing tests in
+`BATS Usage <https://github.com/bats-core/bats-core#usage>`_.

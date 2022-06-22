@@ -23,7 +23,6 @@ from unittest import mock
 from google.cloud.language_v1.proto.language_service_pb2 import Document
 
 from airflow.providers.google.cloud.hooks.natural_language import CloudNaturalLanguageHook
-from airflow.providers.google.common.consts import CLIENT_INFO
 from tests.providers.google.cloud.utils.base_gcp_mock import mock_base_gcp_hook_no_default_project_id
 
 API_RESPONSE = {}  # type: Dict[Any, Any]
@@ -42,12 +41,18 @@ class TestCloudNaturalLanguageHook(unittest.TestCase):
             self.hook = CloudNaturalLanguageHook(gcp_conn_id="test")
 
     @mock.patch(
+        "airflow.providers.google.cloud.hooks.natural_language.CloudNaturalLanguageHook.client_info",
+        new_callable=mock.PropertyMock,
+    )
+    @mock.patch(
         "airflow.providers.google.cloud.hooks.natural_language.CloudNaturalLanguageHook._get_credentials"
     )
     @mock.patch("airflow.providers.google.cloud.hooks.natural_language.LanguageServiceClient")
-    def test_language_service_client_creation(self, mock_client, mock_get_creds):
+    def test_language_service_client_creation(self, mock_client, mock_get_creds, mock_client_info):
         result = self.hook.get_conn()
-        mock_client.assert_called_once_with(credentials=mock_get_creds.return_value, client_info=CLIENT_INFO)
+        mock_client.assert_called_once_with(
+            credentials=mock_get_creds.return_value, client_info=mock_client_info.return_value
+        )
         assert mock_client.return_value == result
         assert self.hook._conn == result
 
@@ -61,7 +66,7 @@ class TestCloudNaturalLanguageHook(unittest.TestCase):
         assert result == API_RESPONSE
 
         get_conn.return_value.analyze_entities.assert_called_once_with(
-            document=DOCUMENT, encoding_type=ENCODING_TYPE, retry=None, timeout=None, metadata=()
+            document=DOCUMENT, encoding_type=ENCODING_TYPE, retry=None, timeout=None, metadata=None
         )
 
     @mock.patch(
@@ -74,7 +79,7 @@ class TestCloudNaturalLanguageHook(unittest.TestCase):
         assert result == API_RESPONSE
 
         get_conn.return_value.analyze_entity_sentiment.assert_called_once_with(
-            document=DOCUMENT, encoding_type=ENCODING_TYPE, retry=None, timeout=None, metadata=()
+            document=DOCUMENT, encoding_type=ENCODING_TYPE, retry=None, timeout=None, metadata=None
         )
 
     @mock.patch(
@@ -87,7 +92,7 @@ class TestCloudNaturalLanguageHook(unittest.TestCase):
         assert result == API_RESPONSE
 
         get_conn.return_value.analyze_sentiment.assert_called_once_with(
-            document=DOCUMENT, encoding_type=ENCODING_TYPE, retry=None, timeout=None, metadata=()
+            document=DOCUMENT, encoding_type=ENCODING_TYPE, retry=None, timeout=None, metadata=None
         )
 
     @mock.patch(
@@ -100,7 +105,7 @@ class TestCloudNaturalLanguageHook(unittest.TestCase):
         assert result == API_RESPONSE
 
         get_conn.return_value.analyze_syntax.assert_called_once_with(
-            document=DOCUMENT, encoding_type=ENCODING_TYPE, retry=None, timeout=None, metadata=()
+            document=DOCUMENT, encoding_type=ENCODING_TYPE, retry=None, timeout=None, metadata=None
         )
 
     @mock.patch(
@@ -118,7 +123,7 @@ class TestCloudNaturalLanguageHook(unittest.TestCase):
             features=None,
             retry=None,
             timeout=None,
-            metadata=(),
+            metadata=None,
         )
 
     @mock.patch(
@@ -131,5 +136,5 @@ class TestCloudNaturalLanguageHook(unittest.TestCase):
         assert result == API_RESPONSE
 
         get_conn.return_value.classify_text.assert_called_once_with(
-            document=DOCUMENT, retry=None, timeout=None, metadata=()
+            document=DOCUMENT, retry=None, timeout=None, metadata=None
         )

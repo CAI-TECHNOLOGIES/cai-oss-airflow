@@ -20,11 +20,10 @@ import unittest
 import pytest
 
 from airflow.decorators import task
-from airflow.exceptions import ParamValidationError
 from airflow.models.param import Param, ParamsDict
 from airflow.utils import timezone
 from airflow.utils.types import DagRunType
-from tests.test_utils.db import clear_db_dags, clear_db_runs, clear_db_xcom
+from tests.test_utils.db import clear_db_dags, clear_db_runs
 
 
 class TestParam(unittest.TestCase):
@@ -37,7 +36,7 @@ class TestParam(unittest.TestCase):
 
     def test_null_param(self):
         p = Param()
-        with pytest.raises(ParamValidationError, match='No value passed and Param has no default value'):
+        with pytest.raises(TypeError, match='No value passed and Param has no default value'):
             p.resolve()
         assert p.resolve(None) is None
 
@@ -49,7 +48,7 @@ class TestParam(unittest.TestCase):
         p = Param(None, type='null')
         assert p.resolve() is None
         assert p.resolve(None) is None
-        with pytest.raises(ParamValidationError):
+        with pytest.raises(ValueError):
             p.resolve('test')
 
     def test_string_param(self):
@@ -63,9 +62,9 @@ class TestParam(unittest.TestCase):
         assert p.resolve() == '10.0.0.0'
 
         p = Param(type='string')
-        with pytest.raises(ParamValidationError):
+        with pytest.raises(ValueError):
             p.resolve(None)
-        with pytest.raises(ParamValidationError, match='No value passed and Param has no default value'):
+        with pytest.raises(TypeError, match='No value passed and Param has no default value'):
             p.resolve()
 
     def test_int_param(self):
@@ -75,7 +74,7 @@ class TestParam(unittest.TestCase):
         p = Param(type='integer', minimum=0, maximum=10)
         assert p.resolve(value=5) == 5
 
-        with pytest.raises(ParamValidationError):
+        with pytest.raises(ValueError):
             p.resolve(value=20)
 
     def test_number_param(self):
@@ -85,9 +84,8 @@ class TestParam(unittest.TestCase):
         p = Param(1.0, type='number')
         assert p.resolve() == 1.0
 
-        with pytest.raises(ParamValidationError):
+        with pytest.raises(ValueError):
             p = Param('42', type='number')
-            p.resolve()
 
     def test_list_param(self):
         p = Param([1, 2], type='array')
@@ -126,9 +124,8 @@ class TestParam(unittest.TestCase):
         p = S3Param("s3://my_bucket/my_path")
         assert p.resolve() == "s3://my_bucket/my_path"
 
-        with pytest.raises(ParamValidationError):
+        with pytest.raises(ValueError):
             p = S3Param("file://not_valid/s3_path")
-            p.resolve()
 
     def test_value_saved(self):
         p = Param("hello", type="string")
@@ -144,23 +141,23 @@ class TestParam(unittest.TestCase):
         assert dump['schema'] == {'type': 'string', 'minLength': 2}
 
 
-class TestParamsDict:
+class TestParamsDict(unittest.TestCase):
     def test_params_dict(self):
         # Init with a simple dictionary
         pd = ParamsDict(dict_obj={'key': 'value'})
-        assert isinstance(pd.get_param('key'), Param)
+        assert pd.get('key').__class__ == Param
         assert pd['key'] == 'value'
         assert pd.suppress_exception is False
 
         # Init with a dict which contains Param objects
         pd2 = ParamsDict({'key': Param('value', type='string')}, suppress_exception=True)
-        assert isinstance(pd2.get_param('key'), Param)
+        assert pd2.get('key').__class__ == Param
         assert pd2['key'] == 'value'
         assert pd2.suppress_exception is True
 
         # Init with another object of another ParamsDict
         pd3 = ParamsDict(pd2)
-        assert isinstance(pd3.get_param('key'), Param)
+        assert pd3.get('key').__class__ == Param
         assert pd3['key'] == 'value'
         assert pd3.suppress_exception is False  # as it's not a deepcopy of pd2
 
@@ -170,27 +167,17 @@ class TestParamsDict:
         assert pd3.dump() == {'key': 'value'}
 
         # Validate the ParamsDict
-        plain_dict = pd.validate()
-        assert type(plain_dict) == dict
+        pd.validate()
         pd2.validate()
         pd3.validate()
 
         # Update the ParamsDict
-        with pytest.raises(ParamValidationError, match=r'Invalid input for param key: 1 is not'):
+        with pytest.raises(ValueError):
             pd3['key'] = 1
 
         # Should not raise an error as suppress_exception is True
         pd2['key'] = 1
         pd2.validate()
-
-    def test_update(self):
-        pd = ParamsDict({'key': Param('value', type='string')})
-
-        pd.update({'key': 'a'})
-        internal_value = pd.get_param('key')
-        assert isinstance(internal_value, Param)
-        with pytest.raises(ParamValidationError, match=r'Invalid input for param key: 1 is not'):
-            pd.update({'key': 1})
 
 
 class TestDagParamRuntime:
@@ -201,9 +188,8 @@ class TestDagParamRuntime:
     def clean_db():
         clear_db_runs()
         clear_db_dags()
-        clear_db_xcom()
 
-    def setup_class(self):
+    def setup_method(self):
         self.clean_db()
 
     def teardown_method(self):
@@ -271,8 +257,3 @@ class TestDagParamRuntime:
 
         ti = dr.get_task_instances()[0]
         assert ti.xcom_pull() == 'test'
-
-    def test_param_non_json_serializable(self):
-        with pytest.warns(DeprecationWarning, match='The use of non-json-serializable params is deprecated'):
-            p = Param(default={0, 1, 2})
-            p.resolve()

@@ -47,13 +47,13 @@ class TestCliDb(unittest.TestCase):
     def test_cli_check_migrations(self, mock_wait_for_migrations):
         db_command.check_migrations(self.parser.parse_args(['db', 'check-migrations']))
 
-        mock_wait_for_migrations.assert_called_once_with(timeout=60)
+        mock_wait_for_migrations.assert_called_once_with(timeout=0)
 
     @mock.patch("airflow.cli.commands.db_command.db.upgradedb")
     def test_cli_upgradedb(self, mock_upgradedb):
         db_command.upgradedb(self.parser.parse_args(['db', 'upgrade']))
 
-        mock_upgradedb.assert_called_once_with(version_range=None, revision_range=None)
+        mock_upgradedb.assert_called_once_with()
 
     @mock.patch("airflow.cli.commands.db_command.execute_interactive")
     @mock.patch("airflow.cli.commands.db_command.NamedTemporaryFile")

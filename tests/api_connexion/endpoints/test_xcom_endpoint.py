@@ -22,7 +22,7 @@ from parameterized import parameterized
 from airflow.models import DagModel, DagRun as DR, XCom
 from airflow.security import permissions
 from airflow.utils.dates import parse_execution_date
-from airflow.utils.session import create_session
+from airflow.utils.session import provide_session
 from airflow.utils.types import DagRunType
 from tests.test_utils.api_connexion_utils import assert_401, create_user, delete_user
 from tests.test_utils.db import clear_db_dags, clear_db_runs, clear_db_xcom
@@ -144,23 +144,23 @@ class TestGetXComEntry(TestXComEndpoint):
         )
         assert response.status_code == 403
 
-    def _create_xcom_entry(self, dag_id, dag_run_id, execution_date, task_id, xcom_key):
-        with create_session() as session:
-            dagrun = DR(
-                dag_id=dag_id,
-                run_id=dag_run_id,
-                execution_date=execution_date,
-                start_date=execution_date,
-                run_type=DagRunType.MANUAL,
-            )
-            session.add(dagrun)
+    @provide_session
+    def _create_xcom_entry(self, dag_id, dag_run_id, execution_date, task_id, xcom_key, session=None):
         XCom.set(
             key=xcom_key,
             value="TEST_VALUE",
-            run_id=dag_run_id,
+            execution_date=execution_date,
             task_id=task_id,
             dag_id=dag_id,
         )
+        dagrun = DR(
+            dag_id=dag_id,
+            run_id=dag_run_id,
+            execution_date=execution_date,
+            start_date=execution_date,
+            run_type=DagRunType.MANUAL,
+        )
+        session.add(dagrun)
 
 
 class TestGetXComEntries(TestXComEndpoint):
@@ -213,6 +213,7 @@ class TestGetXComEntries(TestXComEndpoint):
         task_id_2 = 'test-task-id-2'
         dag_run_id_2 = DR.generate_run_id(DagRunType.MANUAL, execution_date_parsed)
         self._create_xcom_entries(dag_id_2, dag_run_id_2, execution_date_parsed, task_id_2)
+        self._create_invalid_xcom_entries(execution_date_parsed)
 
         response = self.client.get(
             "/api/v1/dags/~/dagRuns/~/taskInstances/~/xcomEntries",
@@ -313,59 +314,61 @@ class TestGetXComEntries(TestXComEndpoint):
 
         assert_401(response)
 
-    def _create_xcom_entries(self, dag_id, dag_run_id, execution_date, task_id):
-        with create_session() as session:
-            dag = DagModel(dag_id=dag_id)
-            session.add(dag)
-
-            dagrun = DR(
-                dag_id=dag_id,
-                run_id=dag_run_id,
-                execution_date=execution_date,
-                start_date=execution_date,
-                run_type=DagRunType.MANUAL,
-            )
-            session.add(dagrun)
+    @provide_session
+    def _create_xcom_entries(self, dag_id, dag_run_id, execution_date, task_id, session=None):
         for i in [1, 2]:
             XCom.set(
                 key=f'test-xcom-key-{i}',
                 value="TEST",
-                run_id=dag_run_id,
+                execution_date=execution_date,
                 task_id=task_id,
                 dag_id=dag_id,
             )
 
-    def _create_invalid_xcom_entries(self, execution_date):
+        dag = DagModel(dag_id=dag_id)
+        session.add(dag)
+
+        dagrun = DR(
+            dag_id=dag_id,
+            run_id=dag_run_id,
+            execution_date=execution_date,
+            start_date=execution_date,
+            run_type=DagRunType.MANUAL,
+        )
+        session.add(dagrun)
+
+    @provide_session
+    def _create_invalid_xcom_entries(self, execution_date, session=None):
         """
         Invalid XCom entries to test join query
         """
-        with create_session() as session:
-            dag = DagModel(dag_id="invalid_dag")
-            session.add(dag)
-            dagrun = DR(
-                dag_id="invalid_dag",
-                run_id="invalid_run_id",
-                execution_date=execution_date + timedelta(days=1),
-                start_date=execution_date,
-                run_type=DagRunType.MANUAL,
-            )
-            session.add(dagrun)
-            dagrun1 = DR(
-                dag_id="invalid_dag",
-                run_id="not_this_run_id",
-                execution_date=execution_date,
-                start_date=execution_date,
-                run_type=DagRunType.MANUAL,
-            )
-            session.add(dagrun1)
         for i in [1, 2]:
             XCom.set(
                 key=f'invalid-xcom-key-{i}',
                 value="TEST",
-                run_id="not_this_run_id",
+                execution_date=execution_date,
                 task_id="invalid_task",
                 dag_id="invalid_dag",
             )
+
+        dag = DagModel(dag_id="invalid_dag")
+        session.add(dag)
+        dagrun = DR(
+            dag_id="invalid_dag",
+            run_id="invalid_run_id",
+            execution_date=execution_date + timedelta(days=1),
+            start_date=execution_date,
+            run_type=DagRunType.MANUAL,
+        )
+        session.add(dagrun)
+        dagrun = DR(
+            dag_id="invalid_dag_1",
+            run_id="invalid_run_id",
+            execution_date=execution_date,
+            start_date=execution_date,
+            run_type=DagRunType.MANUAL,
+        )
+        session.commit()
 
 
 class TestPaginationGetXComEntries(TestXComEndpoint):
@@ -425,36 +428,37 @@ class TestPaginationGetXComEntries(TestXComEndpoint):
             ),
         ]
     )
-    def test_handle_limit_offset(self, query_params, expected_xcom_ids):
+    @provide_session
+    def test_handle_limit_offset(self, query_params, expected_xcom_ids, session):
         url = "/api/v1/dags/{dag_id}/dagRuns/{dag_run_id}/taskInstances/{task_id}/xcomEntries?{query_params}"
         url = url.format(
             dag_id=self.dag_id, dag_run_id=self.dag_run_id, task_id=self.task_id, query_params=query_params
         )
-        with create_session() as session:
-            dagrun = DR(
-                dag_id=self.dag_id,
-                run_id=self.dag_run_id,
-                execution_date=self.execution_date_parsed,
-                start_date=self.execution_date_parsed,
-                run_type=DagRunType.MANUAL,
-            )
-            session.add(dagrun)
-
-        with create_session() as session:
-            for i in range(1, 11):
-                xcom = XCom(
-                    dagrun_id=dagrun.id,
-                    key=f"TEST_XCOM_KEY{i}",
-                    value=b"null",
-                    run_id=self.dag_run_id,
-                    task_id=self.task_id,
-                    dag_id=self.dag_id,
-                    timestamp=self.execution_date_parsed,
-                )
-                session.add(xcom)
-
+        dagrun = DR(
+            dag_id=self.dag_id,
+            run_id=self.dag_run_id,
+            execution_date=self.execution_date_parsed,
+            start_date=self.execution_date_parsed,
+            run_type=DagRunType.MANUAL,
+        )
+        xcom_models = self._create_xcoms(10)
+        session.add_all(xcom_models)
+        session.add(dagrun)
+        session.commit()
         response = self.client.get(url, environ_overrides={'REMOTE_USER': "test"})
         assert response.status_code == 200
         assert response.json["total_entries"] == 10
         conn_ids = [conn["key"] for conn in response.json["xcom_entries"] if conn]
         assert conn_ids == expected_xcom_ids
+
+    def _create_xcoms(self, count):
+        return [
+            XCom(
+                key=f'TEST_XCOM_KEY{i}',
+                execution_date=self.execution_date_parsed,
+                task_id=self.task_id,
+                dag_id=self.dag_id,
+                timestamp=self.execution_date_parsed,
+            )
+            for i in range(1, count + 1)
+        ]

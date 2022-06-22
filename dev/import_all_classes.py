@@ -25,10 +25,7 @@ from inspect import isclass
 from typing import List, Optional, Set, Tuple
 from warnings import WarningMessage
 
-from rich.console import Console
-
-console = Console(width=400, color_system="standard")
-error_console = Console(width=400, color_system="standard", stderr=True)
+from rich import print
 
 
 def import_all_classes(
@@ -48,10 +45,10 @@ def import_all_classes(
     :param provider_ids - provider ids that should be loaded.
     :param print_imports - if imported class should also be printed in output
     :param print_skips - if skipped classes should also be printed in output
-    :return: tuple of list of all imported classes and all warnings generated
+    :return: tupple of list of all imported classes and all warnings generated
     """
     imported_classes = []
-    tracebacks: List[Tuple[str, str]] = []
+    tracebacks = []
     printed_packages: Set[str] = set()
 
     def mk_prefix(provider_id):
@@ -65,25 +62,20 @@ def import_all_classes(
     def onerror(_):
         nonlocal tracebacks
         exception_string = traceback.format_exc()
-        for provider_prefix in provider_prefixes:
-            if provider_prefix in exception_string:
-                start_index = exception_string.find(provider_prefix)
-                end_index = exception_string.find("\n", start_index + len(provider_prefix))
-                package = exception_string[start_index:end_index]
-                tracebacks.append((package, exception_string))
-                break
+        if any(provider_prefix in exception_string for provider_prefix in provider_prefixes):
+            tracebacks.append(exception_string)
 
     all_warnings: List[WarningMessage] = []
     for modinfo in pkgutil.walk_packages(path=paths, prefix=prefix, onerror=onerror):
         if not any(modinfo.name.startswith(provider_prefix) for provider_prefix in provider_prefixes):
             if print_skips:
-                console.print(f"Skipping module: {modinfo.name}")
+                print(f"Skipping module: {modinfo.name}")
             continue
         if print_imports:
             package_to_print = ".".join(modinfo.name.split(".")[:-1])
             if package_to_print not in printed_packages:
                 printed_packages.add(package_to_print)
-                console.print(f"Importing package: {package_to_print}")
+                print(f"Importing package: {package_to_print}")
         try:
             with warnings.catch_warnings(record=True) as w:
                 warnings.filterwarnings("always", category=DeprecationWarning)
@@ -97,18 +89,18 @@ def import_all_classes(
                 all_warnings.extend(w)
         except Exception:
             exception_str = traceback.format_exc()
-            tracebacks.append((modinfo.name, exception_str))
+            tracebacks.append(exception_str)
     if tracebacks:
-        console.print(
+        print(
             """
 [red]ERROR: There were some import errors[/]
 """,
+            file=sys.stderr,
         )
-        error_console.print("[red]----------------------------------------[/]")
-        for package, trace in tracebacks:
-            error_console.print(f"Exception when importing: {package}\n\n")
-            error_console.print(trace)
-            error_console.print("[red]----------------------------------------[/]")
+        for trace in tracebacks:
+            print("[red]----------------------------------------[/]", file=sys.stderr)
+            print(trace, file=sys.stderr)
+            print("[red]----------------------------------------[/]", file=sys.stderr)
         sys.exit(1)
     else:
         return imported_classes, all_warnings

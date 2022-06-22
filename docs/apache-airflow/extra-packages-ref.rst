@@ -46,7 +46,7 @@ python dependencies for the provided package.
 +---------------------+-----------------------------------------------------+----------------------------------------------------------------------------+
 | cgroups             | ``pip install 'apache-airflow[cgroups]'``           | Needed To use CgroupTaskRunner                                             |
 +---------------------+-----------------------------------------------------+----------------------------------------------------------------------------+
-| cncf.kubernetes     | ``pip install 'apache-airflow[cncf.kubernetes]'``   | Kubernetes Executor (also installs the Kubernetes provider package)        |
+| cncf.kubernetes     | ``pip install 'apache-airflow[cncf.kubernetes]'``   | Kubernetes Executor (also installs the kubernetes provider package)        |
 +---------------------+-----------------------------------------------------+----------------------------------------------------------------------------+
 | dask                | ``pip install 'apache-airflow[dask]'``              | DaskExecutor                                                               |
 +---------------------+-----------------------------------------------------+----------------------------------------------------------------------------+
@@ -221,8 +221,6 @@ Those are extras that add dependencies needed for integration with other softwar
 | elasticsearch       | ``pip install 'apache-airflow[elasticsearch]'``     | Elasticsearch hooks and Log Handler       |
 +---------------------+-----------------------------------------------------+-------------------------------------------+
 | exasol              | ``pip install 'apache-airflow[exasol]'``            | Exasol hooks and operators                |
-+---------------------+-----------------------------------------------------+-------------------------------------------+
-| github              | ``pip install 'apache-airflow[github]'``            | Github operators and hook                 |
 +---------------------+-----------------------------------------------------+-------------------------------------------+
 | influxdb            | ``pip install 'apache-airflow[influxdb]'``          | Influxdb operators and hook               |
 +---------------------+-----------------------------------------------------+-------------------------------------------+

@@ -110,7 +110,6 @@ def running_dag_run(session):
     dr = dag.create_dagrun(
         state="running",
         execution_date=execution_date,
-        data_interval=(execution_date, execution_date),
         run_id="test_dag_runs_action",
         session=session,
     )
@@ -163,13 +162,8 @@ def test_delete_dagrun_permission_denied(session, running_dag_run, client_dr_wit
             {"success", "failed"},  # Unchanged.
             "1 dag runs were set to running",
         ),
-        (
-            "set_queued",
-            {"success", "failed"},
-            "1 dag runs were set to queued",
-        ),
     ],
-    ids=["clear", "success", "failed", "running", "queued"],
+    ids=["clear", "success", "failed", "running"],
 )
 def test_set_dag_runs_action(
     session,
@@ -195,9 +189,8 @@ def test_set_dag_runs_action(
         ("set_success", "Failed to set state"),
         ("set_failed", "Failed to set state"),
         ("set_running", "Failed to set state"),
-        ("set_queued", "Failed to set state"),
     ],
-    ids=["clear", "success", "failed", "running", "queued"],
+    ids=["clear", "success", "failed", "running"],
 )
 def test_set_dag_runs_action_fails(admin_client, action, expected_message):
     resp = admin_client.post(

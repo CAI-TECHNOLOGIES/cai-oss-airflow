@@ -15,10 +15,9 @@
 # specific language governing permissions and limitations
 # under the License.
 ---
-{{- $nodeSelector := or .Values.workers.nodeSelector .Values.nodeSelector }}
-{{- $affinity := or .Values.workers.affinity .Values.affinity }}
-{{- $tolerations := or .Values.workers.tolerations .Values.tolerations }}
-{{- $securityContext := include "airflowSecurityContext" (list . .Values.workers) }}
+{{- $nodeSelector := or .Values.nodeSelector .Values.workers.nodeSelector }}
+{{- $affinity := or .Values.affinity .Values.workers.affinity }}
+{{- $tolerations := or .Values.tolerations .Values.workers.tolerations }}
 apiVersion: v1
 kind: Pod
 metadata:
@@ -45,7 +44,9 @@ spec:
     {{- end }}
   {{- end }}
   containers:
-    - envFrom:
+    - args: []
+      command: []
+      envFrom:
       {{- include "custom_airflow_environment_from" . | default "\n  []" | indent 6 }}
       env:
         - name: AIRFLOW__CORE__EXECUTOR
@@ -55,6 +56,7 @@ spec:
       image: {{ template "pod_template_image" . }}
       imagePullPolicy: {{ .Values.images.airflow.pullPolicy }}
       name: base
+      ports: []
       resources:
 {{ toYaml .Values.workers.resources | indent 8 }}
       volumeMounts:
@@ -79,12 +81,15 @@ spec:
 {{- if .Values.workers.extraContainers }}
 {{- toYaml .Values.workers.extraContainers | nindent 4 }}
 {{- end }}
+  hostNetwork: false
   {{- if or .Values.registry.secretName .Values.registry.connection }}
   imagePullSecrets:
     - name: {{ template "registry_secret" . }}
   {{- end }}
   restartPolicy: Never
-  securityContext: {{ $securityContext | nindent 4 }}
+  securityContext:
+    runAsUser: {{ .Values.uid }}
+    fsGroup: {{ .Values.gid }}
   nodeSelector: {{ toYaml $nodeSelector | nindent 4 }}
   affinity: {{ toYaml $affinity | nindent 4 }}
   tolerations: {{ toYaml $tolerations | nindent 4 }}

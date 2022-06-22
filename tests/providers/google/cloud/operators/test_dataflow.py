@@ -129,7 +129,6 @@ class TestDataflowPythonOperator(unittest.TestCase):
 
         """
         start_python_mock = beam_hook_mock.return_value.start_python_pipeline
-        provide_gcloud_mock = dataflow_hook_mock.return_value.provide_authorized_gcloud
         gcs_provide_file = gcs_hook.return_value.provide_file
         job_name = dataflow_hook_mock.return_value.build_dataflow_job_name.return_value
         self.dataflow.execute(None)
@@ -170,7 +169,6 @@ class TestDataflowPythonOperator(unittest.TestCase):
             multiple_jobs=False,
         )
         assert self.dataflow.py_file.startswith('/tmp/dataflow')
-        provide_gcloud_mock.assert_called_once_with()
 
 
 class TestDataflowJavaOperator(unittest.TestCase):
@@ -212,7 +210,6 @@ class TestDataflowJavaOperator(unittest.TestCase):
         start_java_mock = beam_hook_mock.return_value.start_java_pipeline
         gcs_provide_file = gcs_hook.return_value.provide_file
         job_name = dataflow_hook_mock.return_value.build_dataflow_job_name.return_value
-        provide_gcloud_mock = dataflow_hook_mock.return_value.provide_authorized_gcloud
         self.dataflow.check_if_running = CheckJobRunning.IgnoreJob
 
         self.dataflow.execute(None)
@@ -238,10 +235,8 @@ class TestDataflowJavaOperator(unittest.TestCase):
             job_id=mock.ANY,
             job_name=job_name,
             location=TEST_LOCATION,
-            multiple_jobs=False,
+            multiple_jobs=None,
         )
-
-        provide_gcloud_mock.assert_called_once_with()
 
     @mock.patch('airflow.providers.google.cloud.operators.dataflow.BeamHook')
     @mock.patch('airflow.providers.google.cloud.operators.dataflow.DataflowHook')
@@ -322,7 +317,7 @@ class TestDataflowJavaOperator(unittest.TestCase):
             job_id=mock.ANY,
             job_name=job_name,
             location=TEST_LOCATION,
-            multiple_jobs=False,
+            multiple_jobs=None,
         )
 
     @mock.patch(

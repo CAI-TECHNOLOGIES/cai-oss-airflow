@@ -36,7 +36,8 @@ export AIRFLOW_CONSTRAINTS="constraints"
 echo
 echo "Building and pushing ${INSTALL_AIRFLOW_VERSION} Airflow PROD image for ${PYTHON_MAJOR_MINOR_VERSION}"
 echo
-build_images::clean_build_cache
+rm -rf "${BUILD_CACHE_DIR}"
+rm -rf "${AIRFLOW_SOURCES}/docker-context-files/*"
 build_images::prepare_prod_build
 build_images::build_prod_images
 verify_image::verify_prod_image "${AIRFLOW_PROD_IMAGE}"

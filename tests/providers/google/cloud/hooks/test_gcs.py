@@ -27,14 +27,11 @@ from unittest import mock
 
 import dateutil
 import pytest
-
-# dynamic storage type in google.cloud needs to be type-ignored
-from google.cloud import exceptions, storage  # type: ignore[attr-defined]
+from google.cloud import exceptions, storage
 
 from airflow.exceptions import AirflowException
 from airflow.providers.google.cloud.hooks import gcs
 from airflow.providers.google.cloud.hooks.gcs import _fallback_object_url_to_object_name_and_bucket_name
-from airflow.providers.google.common.consts import CLIENT_INFO
 from airflow.utils import timezone
 from airflow.version import version
 from tests.providers.google.cloud.utils.base_gcp_mock import mock_base_gcp_hook_default_project_id
@@ -118,17 +115,24 @@ class TestGCSHook(unittest.TestCase):
             self.gcs_hook = gcs.GCSHook(gcp_conn_id='test')
 
     @mock.patch(
+        'airflow.providers.google.common.hooks.base_google.GoogleBaseHook.client_info',
+        new_callable=mock.PropertyMock,
+        return_value="CLIENT_INFO",
+    )
+    @mock.patch(
         BASE_STRING.format("GoogleBaseHook._get_credentials_and_project_id"),
         return_value=("CREDENTIALS", "PROJECT_ID"),
     )
     @mock.patch(GCS_STRING.format('GoogleBaseHook.get_connection'))
     @mock.patch('google.cloud.storage.Client')
-    def test_storage_client_creation(self, mock_client, mock_get_connection, mock_get_creds_and_project_id):
+    def test_storage_client_creation(
+        self, mock_client, mock_get_connection, mock_get_creds_and_project_id, mock_client_info
+    ):
         hook = gcs.GCSHook()
         result = hook.get_conn()
         # test that Storage Client is called with required arguments
         mock_client.assert_called_once_with(
-            client_info=CLIENT_INFO, credentials="CREDENTIALS", project="PROJECT_ID"
+            client_info="CLIENT_INFO", credentials="CREDENTIALS", project="PROJECT_ID"
         )
         assert mock_client.return_value == result
 
@@ -637,12 +641,12 @@ class TestGCSHook(unittest.TestCase):
         assert str(ctx.value) == 'bucket_name and destination_object cannot be empty.'
 
     @mock.patch(GCS_STRING.format('GCSHook.get_conn'))
-    def test_download_as_bytes(self, mock_service):
+    def test_download_as_string(self, mock_service):
         test_bucket = 'test_bucket'
         test_object = 'test_object'
         test_object_bytes = io.BytesIO(b"input")
 
-        download_method = mock_service.return_value.bucket.return_value.blob.return_value.download_as_bytes
+        download_method = mock_service.return_value.bucket.return_value.blob.return_value.download_as_string
         download_method.return_value = test_object_bytes
 
         response = self.gcs_hook.download(bucket_name=test_bucket, object_name=test_object, filename=None)
@@ -662,10 +666,10 @@ class TestGCSHook(unittest.TestCase):
         )
         download_filename_method.return_value = None
 
-        download_as_a_bytes_method = (
-            mock_service.return_value.bucket.return_value.blob.return_value.download_as_bytes
+        download_as_a_string_method = (
+            mock_service.return_value.bucket.return_value.blob.return_value.download_as_string
         )
-        download_as_a_bytes_method.return_value = test_object_bytes
+        download_as_a_string_method.return_value = test_object_bytes
         response = self.gcs_hook.download(
             bucket_name=test_bucket, object_name=test_object, filename=test_file
         )
@@ -686,10 +690,10 @@ class TestGCSHook(unittest.TestCase):
         )
         download_filename_method.return_value = None
 
-        download_as_a_bytes_method = (
-            mock_service.return_value.bucket.return_value.blob.return_value.download_as_bytes
+        download_as_a_string_method = (
+            mock_service.return_value.bucket.return_value.blob.return_value.download_as_string
         )
-        download_as_a_bytes_method.return_value = test_object_bytes
+        download_as_a_string_method.return_value = test_object_bytes
         mock_temp_file.return_value.__enter__.return_value = mock.MagicMock()
         mock_temp_file.return_value.__enter__.return_value.name = test_file
 
@@ -699,7 +703,7 @@ class TestGCSHook(unittest.TestCase):
         download_filename_method.assert_called_once_with(test_file, timeout=60)
         mock_temp_file.assert_has_calls(
             [
-                mock.call(suffix='test_object', dir=None),
+                mock.call(suffix='test_object'),
                 mock.call().__enter__(),
                 mock.call().__enter__().flush(),
                 mock.call().__exit__(None, None, None),

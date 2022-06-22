@@ -315,7 +315,7 @@ The reverse can also be done: passing the output of a TaskFlow function as an in
     @task
     def create_queue():
         """This is a Python function that creates an SQS queue"""
-        hook = SqsHook()
+        hook = SQSHook()
         result = hook.create_queue(queue_name="sample-queue")
 
         return result["QueueUrl"]
@@ -323,7 +323,7 @@ The reverse can also be done: passing the output of a TaskFlow function as an in
 
     sqs_queue = create_queue()
 
-    publish_to_queue = SqsPublishOperator(
+    publish_to_queue = SQSPublishOperator(
         task_id="publish_to_queue",
         sqs_queue=sqs_queue,
         message_content="{{ task_instance }}-{{ execution_date }}",
@@ -332,7 +332,7 @@ The reverse can also be done: passing the output of a TaskFlow function as an in
     )
 
 Take note in the code example above, the output from the ``create_queue`` TaskFlow function, the URL of a
-newly-created Amazon SQS Queue, is then passed to a :class:`~airflow.providers.amazon.aws.operators.sqs.SqsPublishOperator`
+newly-created Amazon SQS Queue, is then passed to a :class:`~airflow.providers.amazon.aws.operators.sqs.SQSPublishOperator`
 task as the ``sqs_queue`` arg.
 
 Finally, not only can you use traditional operator outputs as inputs for TaskFlow functions, but also as inputs to
@@ -370,6 +370,50 @@ Accessing context variables in decorated tasks
 
 When running your callable, Airflow will pass a set of keyword arguments that can be used in your
 function. This set of kwargs correspond exactly to what you can use in your Jinja templates.
+For this to work, you need to define ``**kwargs`` in your function header, or you can add directly the
+keyword arguments you would like to get - for example with the below code your callable will get
+the values of ``ti`` and ``next_ds`` context variables. Note that when explicit keyword arguments are used,
+they must be made optional in the function header to avoid ``TypeError`` exceptions during DAG parsing as
+these values are not available until task execution.
+
+With explicit arguments:
+
+.. code-block:: python
+
+   @task
+   def my_python_callable(ti=None, next_ds=None):
+       pass
+
+With kwargs:
+
+.. code-block:: python
+
+   @task
+   def my_python_callable(**kwargs):
+       ti = kwargs["ti"]
+       next_ds = kwargs["next_ds"]
+
+Also sometimes you might want to access the context somewhere deep the stack - and you do not want to pass
+the context variables from the task callable. You can do it via ``get_current_context``
+method of the Python operator.
+
+.. code-block:: python
+
+    from airflow.operators.python import get_current_context
+
+
+    def some_function_in_your_library():
+        context = get_current_context()
+        ti = context["ti"]
+
+Current context is accessible only during the task execution. The context is not accessible during
+``pre_execute`` or ``post_execute``. Calling this method outside execution context will raise an error.
+
+Accessing context variables in decorated tasks
+----------------------------------------------
+
+When running your callable, Airflow will pass a set of keyword arguments that can be used in your
+function. This set of kwargs correspond exactly to what you can use in your jinja templates.
 For this to work, you need to define ``**kwargs`` in your function header, or you can add directly the
 keyword arguments you would like to get - for example with the below code your callable will get
 the values of ``ti`` and ``next_ds`` context variables. Note that when explicit keyword arguments are used,

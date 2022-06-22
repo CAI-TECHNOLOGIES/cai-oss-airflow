@@ -43,7 +43,7 @@ How package/modules loading in Python works
 
 The list of directories from which Python tries to load the module is given
 by the variable ``sys.path``. Python really tries to
-`intelligently determine the contents <https://stackoverflow.com/a/38403654>`_
+`intelligently determine the contents of <https://stackoverflow.com/a/38403654>`_
 of this variable, including depending on the operating system and how Python
 is installed and which Python version is used.
 
@@ -112,7 +112,7 @@ In the case above, these are the ways you could import the python files:
 .. code-block:: python
 
    from my_company.common_package.common_module import SomeClass
-   from my_company.common_package.subpackage.subpackaged_util_module import AnotherClass
+   from my_company.common_package.subpackge.subpackaged_util_module import AnotherClass
    from my_company.my_custom_dags.base_dag import BaseDag
 
 You can see the ``.airflowignore`` file at the root of your folder. This is a file that you can put in your
@@ -147,7 +147,7 @@ Airflow, when running dynamically adds three directories to the ``sys.path``:
    can write code that the webserver will be able to execute (ideally the webserver should
    never run code which can be modified by users who write DAGs). Therefore if you need to share some code
    with the webserver, it is highly recommended that you share it via ``config`` or ``plugins`` folder or
-   via installed Airflow packages (see below). Those folders are usually managed and accessible by different
+   via installed airflow packages (see below). Those folders are usually managed and accessible by different
    users (Admins/DevOps) than DAG folders (those are usually data-scientists), so they are considered
    as safe because they are part of configuration of the Airflow installation and controlled by the
    people managing the installation.
@@ -240,7 +240,7 @@ Below is the sample output of the ``airflow info`` command:
 
     Paths info
     airflow_home    | /root/airflow
-    system_path     | /usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    system_path     | /opt/bats/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
     python_path     | /usr/local/bin:/opt/airflow:/files/plugins:/usr/local/lib/python38.zip:/usr/local/lib/python3.8:/usr/
                     | local/lib/python3.8/lib-dynload:/usr/local/lib/python3.8/site-packages:/files/dags:/root/airflow/conf
                     | ig:/root/airflow/plugins

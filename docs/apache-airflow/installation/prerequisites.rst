@@ -24,12 +24,12 @@ Airflow is tested with:
 
 * Databases:
 
-  * PostgreSQL: 10, 11, 12, 13
+  * PostgreSQL:  9.6, 10, 11, 12, 13
   * MySQL: 5.7, 8
   * SQLite: 3.15.0+
   * MSSQL(Experimental): 2017, 2019
 
-* Kubernetes: 1.20.2 1.21.1
+* Kubernetes: 1.18.15 1.19.7 1.20.2
 
 **Note:** MySQL 5.x versions are unable to or have limitations with
 running multiple schedulers -- please see: :doc:`/concepts/scheduler`. MariaDB is not tested/recommended.

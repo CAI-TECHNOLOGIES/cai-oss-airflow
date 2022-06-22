@@ -17,7 +17,6 @@
 
 import textwrap
 import unittest
-from typing import Any, Dict, List, Tuple
 
 import jmespath
 import yaml
@@ -55,17 +54,10 @@ PARAMS = [
         ("Deployment", f"{RELEASE_NAME}-webserver"),
         ("spec.template.spec.initContainers[0]", "spec.template.spec.containers[0]"),
     ),
-    (
-        ("Deployment", f"{RELEASE_NAME}-flower"),
-        ("spec.template.spec.containers[0]",),
-    ),
 ]
 
 
 class ExtraEnvEnvFromTest(unittest.TestCase):
-    k8s_objects: List[Dict[str, Any]]
-    k8s_objects_by_key: Dict[Tuple[str, str], Dict[str, Any]]
-
     @classmethod
     def setUpClass(cls) -> None:
         values_str = textwrap.dedent(

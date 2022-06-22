@@ -198,65 +198,50 @@ Step 2: Configure Your Environment
 ----------------------------------
 
 You can use either a local virtual env or a Docker-based env. The differences
-between the two are explained `here <https://github.com/apache/airflow/blob/main/CONTRIBUTING.rst#development-environments>`__.
+between the two are explained `here <https://github.com/apache/airflow/blob/main/CONTRIBUTING.rst#development-environments>`_.
 
-
-The local env's instructions can be found in full in the `LOCAL_VIRTUALENV.rst`_ file.
-
-.. _LOCAL_VIRTUALENV.rst:
-https://github.com/apache/airflow/blob/main/LOCAL_VIRTUALENV.rst
+The local env's instructions can be found in full in the  `LOCAL_VIRTUALENV.rst <https://github.com/apache/airflow/blob/main/LOCAL_VIRTUALENV.rst>`_ file.
 The Docker env is here to maintain a consistent and common development environment so that you can replicate CI failures locally and work on solving them locally rather by pushing to CI.
 
 You can configure the Docker-based Breeze development environment as follows:
 
-1. Install the latest versions of the `Docker Community Edition`_ and `Docker Compose`_ and add them to the PATH.
+1. Install the latest versions of the Docker Community Edition
+   and Docker Compose and add them to the PATH.
 
-.. _Docker Community Edition:
-https://github.com/apache/airflow/blob/main/BREEZE.rst#docker-community-edition
-
-.. _Docker Compose: https://github.com/apache/airflow/blob/main/BREEZE.rst#docker-compose
-
-2. Install `jq`_ on your machine. The exact command depends on the operating system (or Linux distribution) you use.
-
-.. _jq: https://stedolan.github.io/jq/
-
+2. Install jq on your machine. The exact command depends on the operating system (or Linux distribution) you use.
 For example, on Ubuntu:
 
 .. code-block:: bash
 
-   sudo apt install jq
+  sudo apt install jq
 
 or on macOS with `Homebrew <https://formulae.brew.sh/formula/jq>`_
 
 .. code-block:: bash
 
-   brew install jq
+  brew install jq
 
-3. Enter Breeze, and run the following in the Airflow source code directory:
+3. Enter Breeze: ``./breeze``
 
-.. code-block:: bash
+   Breeze starts with downloading the Airflow CI image from
+   the Docker Hub and installing all required dependencies.
 
-   ./breeze
+4. Enter the Docker environment and mount your local sources
+   to make them immediately visible in the environment.
 
-Breeze starts with downloading the Airflow CI image from
-the Docker Hub and installing all required dependencies.
-
-This will enter the Docker Docker environment and mount your local sources
-to make them immediately visible in the environment.
-
-4. Create a local virtualenv, for example:
+5. Create a local virtualenv, for example:
 
 .. code-block:: bash
 
-   mkvirtualenv myenv --python=python3.7
+   mkvirtualenv myenv --python=python3.6
 
-5. Initialize the created environment:
+6. Initialize the created environment:
 
 .. code-block:: bash
 
-   ./breeze initialize-local-virtualenv --python 3.7
+   ./breeze initialize-local-virtualenv --python 3.6
 
-6. Open your IDE (for example, PyCharm) and select the virtualenv you created
+7. Open your IDE (for example, PyCharm) and select the virtualenv you created
    as the project's default virtualenv in your IDE.
 
 Step 3: Connect with People
@@ -415,7 +400,7 @@ these guidelines:
 -   Run tests locally before opening PR.
 
 -   You can use any supported python version to run the tests, but the best is to check
-    if it works for the oldest supported version (Python 3.7 currently). In rare cases
+    if it works for the oldest supported version (Python 3.6 currently). In rare cases
     tests might fail with the oldest version when you use features that are available in newer Python
     versions. For that purpose we have ``airflow.compat`` package where we keep back-ported
     useful features from newer versions.
@@ -582,7 +567,7 @@ Airflow dependencies
 
    Only ``pip`` installation is currently officially supported.
 
-   While there are some successes with using other tools like `poetry <https://python-poetry.org/>`_ or
+   While they are some successes with using other tools like `poetry <https://python-poetry.org/>`_ or
    `pip-tools <https://pypi.org/project/pip-tools/>`_, they do not share the same workflow as
    ``pip`` - especially when it comes to constraint vs. requirements management.
    Installing via ``Poetry`` or ``pip-tools`` is not currently supported.
@@ -609,13 +594,13 @@ apache.druid, apache.hdfs, apache.hive, apache.kylin, apache.livy, apache.pig, a
 apache.spark, apache.sqoop, apache.webhdfs, asana, async, atlas, aws, azure, cassandra, celery,
 cgroups, cloudant, cncf.kubernetes, crypto, dask, databricks, datadog, deprecated_api, devel,
 devel_all, devel_ci, devel_hadoop, dingding, discord, doc, docker, druid, elasticsearch, exasol,
-facebook, ftp, gcp, gcp_api, github, github_enterprise, google, google_auth, grpc, hashicorp, hdfs,
-hive, http, imap, influxdb, jdbc, jenkins, jira, kerberos, kubernetes, ldap, leveldb,
-microsoft.azure, microsoft.mssql, microsoft.psrp, microsoft.winrm, mongo, mssql, mysql, neo4j, odbc,
-openfaas, opsgenie, oracle, pagerduty, pandas, papermill, password, pinot, plexus, postgres, presto,
-qds, qubole, rabbitmq, redis, s3, salesforce, samba, segment, sendgrid, sentry, sftp, singularity,
-slack, snowflake, spark, sqlite, ssh, statsd, tableau, telegram, trino, vertica, virtualenv,
-webhdfs, winrm, yandex, zendesk
+facebook, ftp, gcp, gcp_api, github_enterprise, google, google_auth, grpc, hashicorp, hdfs, hive,
+http, imap, influxdb, jdbc, jenkins, jira, kerberos, kubernetes, ldap, leveldb, microsoft.azure,
+microsoft.mssql, microsoft.psrp, microsoft.winrm, mongo, mssql, mysql, neo4j, odbc, openfaas,
+opsgenie, oracle, pagerduty, pandas, papermill, password, pinot, plexus, postgres, presto, qds,
+qubole, rabbitmq, redis, s3, salesforce, samba, segment, sendgrid, sentry, sftp, singularity, slack,
+snowflake, spark, sqlite, ssh, statsd, tableau, telegram, trino, vertica, virtualenv, webhdfs,
+winrm, yandex, zendesk
 
   .. END EXTRAS HERE
 
@@ -674,7 +659,7 @@ Here is the list of packages and their extras:
 Package                    Extras
 ========================== ===========================
 airbyte                    http
-amazon                     apache.hive,cncf.kubernetes,exasol,ftp,google,imap,mongo,salesforce,ssh
+amazon                     apache.hive,cncf.kubernetes,exasol,ftp,google,imap,mongo,mysql,postgres,salesforce,ssh
 apache.beam                google
 apache.druid               apache.hive
 apache.hive                amazon,microsoft.mssql,mysql,presto,samba,vertica
@@ -683,10 +668,10 @@ dingding                   http
 discord                    http
 google                     amazon,apache.beam,apache.cassandra,cncf.kubernetes,facebook,microsoft.azure,microsoft.mssql,mysql,oracle,postgres,presto,salesforce,sftp,ssh,trino
 hashicorp                  google
-microsoft.azure            google,oracle,sftp
+microsoft.azure            google,oracle
 mysql                      amazon,presto,trino,vertica
+opsgenie                   http
 postgres                   amazon
-presto                     google
 salesforce                 tableau
 sftp                       ssh
 slack                      http
@@ -809,7 +794,7 @@ Pinned constraint files
 
    Only ``pip`` installation is officially supported.
 
-   While it is possible to install Airflow with tools like `poetry <https://python-poetry.org/>`_ or
+   While they are some successes with using other tools like `poetry <https://python-poetry.org/>`_ or
    `pip-tools <https://pypi.org/project/pip-tools/>`_, they do not share the same workflow as
    ``pip`` - especially when it comes to constraint vs. requirements management.
    Installing via ``Poetry`` or ``pip-tools`` is not currently supported.
@@ -848,7 +833,7 @@ It can be done from the sources:
 .. code-block:: bash
 
   pip install -e . \
-    --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-main/constraints-3.7.txt"
+    --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-main/constraints-3.6.txt"
 
 
 or from the PyPI package:
@@ -856,7 +841,7 @@ or from the PyPI package:
 .. code-block:: bash
 
   pip install apache-airflow \
-    --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-main/constraints-3.7.txt"
+    --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-main/constraints-3.6.txt"
 
 
 This works also with extras - for example:
@@ -864,7 +849,7 @@ This works also with extras - for example:
 .. code-block:: bash
 
   pip install .[ssh] \
-    --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-main/constraints-3.7.txt"
+    --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-main/constraints-3.6.txt"
 
 
 As of apache-airflow 1.10.12 it is also possible to use constraints directly from GitHub using specific
@@ -874,7 +859,7 @@ fixed valid constraints 1.10.12 can be used by using ``constraints-1.10.12`` tag
 .. code-block:: bash
 
   pip install apache-airflow[ssh]==1.10.12 \
-      --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-1.10.12/constraints-3.7.txt"
+      --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-1.10.12/constraints-3.6.txt"
 
 There are different set of fixed constraint files for different python major/minor versions and you should
 use the right file for the right python version.
@@ -885,7 +870,7 @@ If you want to update just airflow dependencies, without paying attention to pro
 .. code-block:: bash
 
   pip install . --upgrade \
-    --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-main/constraints-no-providers-3.7.txt"
+    --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-main/constraints-no-providers-3.6.txt"
 
 
 The ``constraints-<PYTHON_MAJOR_MINOR_VERSION>.txt`` and ``constraints-no-providers-<PYTHON_MAJOR_MINOR_VERSION>.txt``
@@ -936,30 +921,20 @@ you should do:
     if not some_predicate():
         handle_the_case()
 
-The one exception to this is if you need to make an assert for typechecking (which should be almost a last resort) you can do this:
-
-.. code-block:: python
-
-    if TYPE_CHECKING:
-        assert isinstance(x, MyClass)
-
-
 Database Session Handling
 -------------------------
 
 **Explicit is better than implicit.** If a function accepts a ``session`` parameter it should not commit the
 transaction itself. Session management is up to the caller.
 
-To make this easier, there is the ``create_session`` helper:
+To make this easier there is the ``create_session`` helper:
 
 .. code-block:: python
-
-    from sqlalchemy.orm import Session
 
     from airflow.utils.session import create_session
 
 
-    def my_call(*args, session: Session):
+    def my_call(*args, session):
         ...
         # You MUST not commit the session here.
 
@@ -971,22 +946,13 @@ If this function is designed to be called by "end-users" (i.e. DAG authors) then
 
 .. code-block:: python
 
-    from sqlalchemy.orm import Session
-
-    from airflow.utils.session import NEW_SESSION, provide_session
+    from airflow.utils.session import provide_session
 
 
     @provide_session
-    def my_method(arg, *, session: Session = NEW_SESSION):
+    def my_method(arg, session=None):
         ...
         # You SHOULD not commit the session here. The wrapper will take care of commit()/rollback() if exception
-
-In both cases, the ``session`` argument is a `keyword-only argument`_. This is the most preferred form if
-possible, although there are some exceptions in the code base where this cannot be used, due to backward
-compatibility considerations. In most cases, ``session`` argument should be last in the argument list.
-
-.. _`keyword-only argument`: https://www.python.org/dev/peps/pep-3102/
-
 
 Don't use time() for duration calculations
 -----------------------------------------
@@ -1220,25 +1186,11 @@ commands:
 
 .. code-block:: bash
 
-    # Check JS code in .js, .jsx, and .html files, and report any errors/warnings
+    # Check JS code in .js and .html files, and report any errors/warnings
     yarn run lint
 
-    # Check JS code in .js, .jsx, and .html files, report any errors/warnings and fix them if possible
+    # Check JS code in .js and .html files, report any errors/warnings and fix them if possible
     yarn run lint:fix
-
-    # Runs tests for all .test.js and .test.jsx files
-    yarn test
-
-React, JSX and Chakra
------------------------------
-
-In order to create a more modern UI, we have started to include [React](https://reactjs.org/) in the ``airflow/www/`` project.
-If you are unfamiliar with React then it is recommended to check out their documentation to understand components and jsx syntax.
-
-We are using [Chakra UI](https://chakra-ui.com/) as a component and styling library. Notably, all styling is done in a theme file or
-inline when defining a component. There are a few shorthand style props like ``px`` instead of ``padding-right, padding-left``.
-To make this work, all Chakra styling and css styling are completely separate. It is best to think of the React components as a separate app
-that lives inside of the main app.
 
 How to sync your fork
 =====================
@@ -1257,24 +1209,10 @@ How to rebase PR
 ================
 
 A lot of people are unfamiliar with the rebase workflow in Git, but we think it is an excellent workflow,
-providing a better alternative to the merge workflow. We've therefore written a short guide for those who
-would like to learn it.
+providing a better alternative to the merge workflow. We've therefore written a short guide for those who would like to learn it.
 
-
-As of February 2022, GitHub introduced the capability of "Update with Rebase" which make it easy to perform
-rebase straight in the GitHub UI, so in cases when there are no conflicts, rebasing to latest version
-of ``main`` can be done very easily following the instructions
-`in the GitHub blog <https://github.blog/changelog/2022-02-03-more-ways-to-keep-your-pull-request-branch-up-to-date/>`_
-
-.. image:: images/rebase.png
-    :align: center
-    :alt: Update PR with rebase
-
-However, when you have conflicts, sometimes you will have to perform rebase manually, and resolve the
-conflicts, and remainder of the section describes how to approach it.
-
-As opposed to the merge workflow, the rebase workflow allows us to clearly separate your changes from the
-changes of others. It puts the responsibility of rebasing on the
+As opposed to the merge workflow, the rebase workflow allows us to
+clearly separate your changes from the changes of others. It puts the responsibility of rebasing on the
 author of the change. It also produces a "single-line" series of commits on the main branch. This
 makes it easier to understand what was going on and to find reasons for problems (it is especially
 useful for "bisecting" when looking for a commit that introduced some bugs).
@@ -1467,21 +1405,23 @@ this is for the sake of maintainability.
 
 Here are a few rules that are important to keep in mind when you enter our community:
 
-* Do not be afraid to ask questions
-* The communication is asynchronous - do not expect immediate answers, ping others on slack
-  (#development channel) if blocked
-* There is a #newbie-questions channel in slack as a safe place to ask questions
-* You can ask one of the committers to be a mentor for you, committers can guide within the community
-* You can apply to more structured `Apache Mentoring Programme <https://community.apache.org/mentoringprogramme.html>`_
-* It’s your responsibility as an author to take your PR from start-to-end including leading communication
-  in the PR
-* It’s your responsibility as an author to ping committers to review your PR - be mildly annoying sometimes,
-  it’s OK to be slightly annoying with your change - it is also a sign for committers that you care
-* Be considerate to the high code quality/test coverage requirements for Apache Airflow
-* If in doubt - ask the community for their opinion or propose to vote at the devlist
-* Discussions should concern subject matters - judge or criticise the merit but never criticise people
-* It’s OK to express your own emotions while communicating - it helps other people to understand you
-* Be considerate for feelings of others. Tell about how you feel not what you think of others
+ * Do not be afraid to ask questions
+ * The communication is asynchronous - do not expect immediate answers, ping others on slack
+   (#development channel) if blocked
+ * There is a #newbie-questions channel in slack as a safe place to ask questions
+ * You can ask one of the committers to be a mentor for you, committers can guide within the community
+ * You can apply to more structured `Apache Mentoring Programme <https://community.apache.org/mentoringprogramme.html>`_
+ * It’s your responsibility as an author to take your PR from start-to-end including leading communication
+   in the PR
+ * It’s your responsibility as an author to ping committers to review your PR - be mildly annoying sometimes,
+   it’s OK to be slightly annoying with your change - it is also a sign for committers that you care
+ * Be considerate to the high code quality/test coverage requirements for Apache Airflow
+ * If in doubt - ask the community for their opinion or propose to vote at the devlist
+ * Discussions should concern subject matters - judge or criticise the merit but never criticise people
+ * It’s OK to express your own emotions while communicating - it helps other people to understand you
+ * Be considerate for feelings of others. Tell about how you feel not what you think of others
+
+
 
 Commit Policy
 =============

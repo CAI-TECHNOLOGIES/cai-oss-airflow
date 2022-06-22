@@ -23,6 +23,7 @@ import subprocess
 import sys
 import unittest
 from copy import deepcopy
+from distutils import log
 from os.path import dirname, relpath
 from textwrap import wrap
 from typing import Dict, List
@@ -30,10 +31,6 @@ from typing import Dict, List
 from setuptools import Command, Distribution, find_namespace_packages, setup
 from setuptools.command.develop import develop as develop_orig
 from setuptools.command.install import install as install_orig
-
-# Setuptools patches this import to point to a vendored copy instead of the
-# stdlib, which is deprecated in Python 3.10 and will be removed in 3.12.
-from distutils import log  # isort: skip
 
 # Controls whether providers are installed from packages or directly from sources
 # It is turned on by default in case of development environments such as Breeze
@@ -44,7 +41,7 @@ PY39 = sys.version_info >= (3, 9)
 
 logger = logging.getLogger(__name__)
 
-version = '2.3.0.dev0'
+version = '2.2.4'
 
 my_dir = dirname(__file__)
 
@@ -182,7 +179,6 @@ def write_version(filename: str = os.path.join(*[my_dir, "airflow", "git_version
 # We limit Pandas to <1.4 because Pandas 1.4 requires SQLAlchemy 1.4 which
 # We should remove the limits as soon as Flask App Builder releases version 3.4.4
 # Release candidate is there: https://pypi.org/project/Flask-AppBuilder/3.4.4rc1/
-# TODO: remove it when we fix all SQLAlchemy 1.4 problems
 pandas_requirement = 'pandas>=0.17.1, <1.4'
 
 # 'Start dependencies group' and 'Start dependencies group' are mark for ./scripts/ci/check_order_setup.py
@@ -192,23 +188,19 @@ alibaba = [
     'oss2>=2.14.0',
 ]
 amazon = [
-    'boto3>=1.15.0',
-    # watchtower 3 has been released end Jan and introduced breaking change across the board that might
-    # change logging behaviour:
-    # https://github.com/kislyuk/watchtower/blob/develop/Changes.rst#changes-for-v300-2022-01-26
-    # TODO: update to watchtower >3
+    'boto3>=1.15.0,<1.19.0',
     'watchtower~=2.0.1',
     'jsonpath_ng>=1.5.3',
-    'redshift_connector>=2.0.888',
-    'sqlalchemy_redshift>=0.8.6',
+    'redshift_connector~=2.0.888',
+    'sqlalchemy_redshift~=0.8.6',
     pandas_requirement,
 ]
 apache_beam = [
-    'apache-beam>=2.33.0',
+    'apache-beam>=2.20.0',
 ]
 asana = ['asana>=0.10']
 async_packages = [
-    'eventlet>=0.9.7',
+    'eventlet>= 0.9.7',
     'gevent>=0.13',
     'greenlet>=0.4.9',
 ]
@@ -217,13 +209,11 @@ atlas = [
 ]
 azure = [
     'azure-batch>=8.0.0',
-    'azure-cosmos>=4.0.0',
+    'azure-cosmos>=4.0.0,<5',
     'azure-datalake-store>=0.0.45',
     'azure-identity>=1.3.1',
     'azure-keyvault>=4.1.0',
     'azure-kusto-data>=0.0.43,<0.1',
-    # Azure integration uses old librarires and the limits below reflect that
-    # TODO: upgrade to newer versions of all the below libraries
     'azure-mgmt-containerinstance>=1.5.0,<2.0',
     'azure-mgmt-datafactory>=1.0.0,<2.0',
     'azure-mgmt-datalake-store>=0.5.0',
@@ -234,11 +224,12 @@ azure = [
     'azure-storage-file>=2.1.0',
 ]
 cassandra = [
-    'cassandra-driver>=3.13.0',
+    'cassandra-driver>=3.13.0,<4',
 ]
 celery = [
-    'celery>=5.2.3',
-    'flower>=1.0.0',
+    'celery~=5.1,>=5.1.2;python_version<"3.7"',
+    'celery>=5.2.3;python_version>="3.7"',
+    'flower~=1.0.0',
 ]
 cgroups = [
     'cgroupspy>=0.1.4',
@@ -247,15 +238,13 @@ cloudant = [
     'cloudant>=2.0',
 ]
 dask = [
-    # Dask support is limited, we need Dask team to upgrade support for dask if we were to continue
-    # Supporting it in the future
-    # TODO: upgrade libraries used or maybe deprecate and drop DASK support
     'cloudpickle>=1.4.1, <1.5.0',
-    'dask>=2.9.0, <2021.6.1',  # dask 2021.6.1 does not work with `distributed`
+    'dask<2021.3.1;python_version<"3.7"',  # dask stopped supporting python 3.6 in 2021.3.1 version
+    'dask>=2.9.0, <2021.6.1;python_version>="3.7"',  # dask 2021.6.1 does not work with `distributed`
     'distributed>=2.11.1, <2.20',
 ]
 databricks = [
-    'requests>=2.26.0',
+    'requests>=2.26.0, <3',
 ]
 datadog = [
     'datadog>=0.14.0',
@@ -264,20 +253,17 @@ deprecated_api = [
     'requests>=2.26.0',
 ]
 doc = [
-    'click>=8.0',
-    'sphinx>=4.4.0',
-    # Without this, Sphinx goes in to a _very_ large backtrack on Python 3.7,
-    # even though Sphinx 4.4.0 has this but with python_version<3.10.
-    'importlib-metadata>=4.4; python_version < "3.8"',
+    'click>=7.1,<9',
+    'sphinx>=4.0.0, <5.0.0',
     'sphinx-airflow-theme',
     'sphinx-argparse>=0.1.13',
-    'sphinx-autoapi>=1.8.0',
+    'sphinx-autoapi~=1.8.0',
     'sphinx-copybutton',
-    'sphinx-jinja>=1.1',
+    'sphinx-jinja~=1.1',
     'sphinx-rtd-theme>=0.1.6',
     'sphinxcontrib-httpdomain>=1.7.0',
     'sphinxcontrib-redoc>=1.6.0',
-    'sphinxcontrib-spelling>=7.3',
+    'sphinxcontrib-spelling~=7.3',
 ]
 docker = [
     'docker>=5.0.3',
@@ -291,60 +277,53 @@ elasticsearch = [
     'elasticsearch-dbapi',
     'elasticsearch-dsl>=5.0.0',
 ]
-exasol = ['pyexasol>=0.5.1', pandas_requirement]
+exasol = ['pyexasol>=0.5.1,<1.0.0', pandas_requirement]
 facebook = [
     'facebook-business>=6.0.2',
 ]
 flask_appbuilder_authlib = [
     'authlib',
 ]
-github = [
-    'pygithub',
-]
 google = [
-    # Google has very clear rules on what dependencies should be used. All the limits below
-    # follow strict guidelines of Google Libraries as quoted here:
-    # While this issue is open, dependents of google-api-core, google-cloud-core. and google-auth
-    # should preserve >1, <3 pins on these packages.
-    # https://github.com/googleapis/google-cloud-python/issues/10566
-    # Some of Google Packages are limited to <2.0.0 because 2.0.0 releases of the libraries
-    # Introduced breaking changes across the board. Those libraries should be upgraded soon
-    # TODO: Upgrade all Google libraries that are limited to <2.0.0
     'PyOpenSSL',
     # The Google Ads 14.0.1 breaks PIP and eager upgrade as it requires
     # google-api-core>=2.0.0 which cannot be used yet (see below comment)
     # and https://github.com/apache/airflow/issues/18705#issuecomment-933746150
     'google-ads>=12.0.0,<14.0.1',
+    # Maintainers, please do not require google-api-core>=2.x.x
+    # Until this issue is closed
+    # https://github.com/googleapis/google-cloud-python/issues/10566
     'google-api-core>=1.25.1,<3.0.0',
     'google-api-python-client>=1.6.0,<2.0.0',
-    'google-auth>=1.0.0',
+    # Maintainers, please do not require google-auth>=2.x.x
+    # Until this issue is closed
+    # https://github.com/googleapis/google-cloud-python/issues/10566
+    'google-auth>=1.0.0,<3.0.0',
     'google-auth-httplib2>=0.0.1',
-    'google-cloud-aiplatform>=1.7.1,<2.0.0',
-    'google-cloud-automl>=2.1.0',
-    'google-cloud-bigquery-datatransfer>=3.0.0',
+    'google-cloud-automl>=2.1.0,<3.0.0',
+    'google-cloud-bigquery-datatransfer>=3.0.0,<4.0.0',
     'google-cloud-bigtable>=1.0.0,<2.0.0',
-    'google-cloud-build>=3.0.0',
+    'google-cloud-build>=3.0.0,<4.0.0',
     'google-cloud-container>=0.1.1,<2.0.0',
-    'google-cloud-datacatalog>=3.0.0',
-    'google-cloud-dataproc>=3.1.0',
+    'google-cloud-datacatalog>=3.0.0,<4.0.0',
+    'google-cloud-dataproc>=3.1.0,<4.0.0',
     'google-cloud-dataproc-metastore>=1.2.0,<2.0.0',
     'google-cloud-dlp>=0.11.0,<2.0.0',
-    'google-cloud-kms>=2.0.0',
+    'google-cloud-kms>=2.0.0,<3.0.0',
     'google-cloud-language>=1.1.1,<2.0.0',
-    'google-cloud-logging>=2.1.1',
+    'google-cloud-logging>=2.1.1,<3.0.0',
     # 1.1.0 removed field_mask and broke import for released providers
     # We can remove the <1.1.0 limitation after we release new Google Provider
     'google-cloud-memcache>=0.2.0,<1.1.0',
-    'google-cloud-monitoring>=2.0.0',
-    'google-cloud-os-login>=2.0.0',
-    'google-cloud-orchestration-airflow>=1.0.0,<2.0.0',
-    'google-cloud-pubsub>=2.0.0',
-    'google-cloud-redis>=2.0.0',
+    'google-cloud-monitoring>=2.0.0,<3.0.0',
+    'google-cloud-os-login>=2.0.0,<3.0.0',
+    'google-cloud-pubsub>=2.0.0,<3.0.0',
+    'google-cloud-redis>=2.0.0,<3.0.0',
     'google-cloud-secret-manager>=0.2.0,<2.0.0',
     'google-cloud-spanner>=1.10.0,<2.0.0',
     'google-cloud-speech>=0.36.3,<2.0.0',
     'google-cloud-storage>=1.30,<2.0.0',
-    'google-cloud-tasks>=2.0.0',
+    'google-cloud-tasks>=2.0.0,<3.0.0',
     'google-cloud-texttospeech>=0.4.0,<2.0.0',
     'google-cloud-translate>=1.5.0,<2.0.0',
     'google-cloud-videointelligence>=1.7.0,<2.0.0',
@@ -352,25 +331,19 @@ google = [
     'google-cloud-workflows>=0.1.0,<2.0.0',
     'grpcio-gcp>=0.2.2',
     'httpx',
-    'json-merge-patch>=0.2',
+    'json-merge-patch~=0.2',
     # pandas-gbq 0.15.0 release broke google provider's bigquery import
     # _check_google_client_version (airflow/providers/google/cloud/hooks/bigquery.py:49)
     'pandas-gbq<0.15.0',
     pandas_requirement,
-    'sqlalchemy-bigquery>=1.2.1',
 ]
 grpc = [
-    # Google has very clear rules on what dependencies should be used. All the limits below
-    # follow strict guidelines of Google Libraries as quoted here:
-    # While this issue is open, dependents of google-api-core, google-cloud-core. and google-auth
-    # should preserve >1, <3 pins on these packages.
-    # https://github.com/googleapis/google-cloud-python/issues/10566
     'google-auth>=1.0.0, <3.0.0',
     'google-auth-httplib2>=0.0.1',
     'grpcio>=1.15.0',
 ]
 hashicorp = [
-    'hvac>=0.10',
+    'hvac~=0.10',
 ]
 hdfs = [
     'snakebite-py3',
@@ -410,7 +383,7 @@ kerberos = [
 ]
 kubernetes = [
     'cryptography>=2.0.0',
-    'kubernetes>=3.0.0',
+    'kubernetes>=3.0.0, <12.0.0',
 ]
 kylin = ['kylinpy>=2.6']
 ldap = [
@@ -419,30 +392,26 @@ ldap = [
 ]
 leveldb = ['plyvel']
 mongo = [
-    'dnspython>=1.13.0',
+    'dnspython>=1.13.0,<3.0.0',
     # pymongo 4.0.0 removes connection option `ssl_cert_reqs` which is used in providers-mongo/2.2.0
-    # TODO: Upgrade to pymongo 4.0.0+
     'pymongo>=3.6.0,<4.0.0',
 ]
 mssql = [
-    'pymssql>=2.1.5',
+    'pymssql~=2.1,>=2.1.5',
 ]
 mysql = [
-    'mysql-connector-python>=8.0.11',
-    'mysqlclient>=1.3.6',
+    'mysql-connector-python>=8.0.11, <9',
+    'mysqlclient>=1.3.6,<3',
 ]
 neo4j = ['neo4j>=4.2.1']
 odbc = [
     'pyodbc',
 ]
-opsgenie = [
-    'opsgenie-sdk>=2.1.5',
-]
 oracle = [
     'cx_Oracle>=5.1.2',
 ]
 pagerduty = [
-    'pdpyras>=4.1.2',
+    'pdpyras>=4.1.2,<5',
 ]
 pandas = [
     pandas_requirement,
@@ -458,7 +427,7 @@ password = [
 pinot = [
     # pinotdb v0.1.1 may still work with older versions of Apache Pinot, but we've confirmed that it
     # causes a problem with newer versions.
-    'pinotdb>0.1.2',
+    'pinotdb>0.1.2,<1.0.0',
 ]
 plexus = [
     'arrow>=0.16.0',
@@ -467,13 +436,11 @@ postgres = [
     'psycopg2-binary>=2.7.4',
 ]
 presto = [
-    # The limit to Presto 0.8 for unknown reason
-    # TODO: Remove the limit
     'presto-python-client>=0.7.0,<0.8',
     pandas_requirement,
 ]
 psrp = [
-    'pypsrp>=0.8',
+    'pypsrp~=0.5',
 ]
 qubole = [
     'qds-sdk>=1.10.4',
@@ -482,10 +449,6 @@ rabbitmq = [
     'amqp',
 ]
 redis = [
-    # Redis 4 introduced a number of changes that likely need testing including mixins in redis commands
-    # as well as unquoting URLS with `urllib.parse.unquote`:
-    # https://github.com/redis/redis-py/blob/master/CHANGES
-    # TODO: upgrade to support redis package >=4
     'redis~=3.2',
 ]
 salesforce = ['simple-salesforce>=1.0.0', 'tableauserverclient', pandas_requirement]
@@ -496,7 +459,7 @@ segment = [
     'analytics-python>=1.2.9',
 ]
 sendgrid = [
-    'sendgrid>=6.0.0',
+    'sendgrid>=6.0.0,<7',
 ]
 sentry = [
     'blinker>=1.1',
@@ -504,7 +467,7 @@ sentry = [
 ]
 singularity = ['spython>=0.0.56']
 slack = [
-    'slack_sdk>=3.0.0',
+    'slack_sdk>=3.0.0,<4.0.0',
 ]
 snowflake = [
     # Snowflake connector 2.7.2 requires pyarrow >=6.0.0 but apache-beam requires < 6.0.0
@@ -521,16 +484,16 @@ spark = [
 ssh = [
     'paramiko>=2.6.0',
     'pysftp>=0.2.9',
-    'sshtunnel>=0.3.2',
+    'sshtunnel>=0.3.2,<0.5',
 ]
 statsd = [
-    'statsd>=3.3.0',
+    'statsd>=3.3.0, <4.0',
 ]
 tableau = [
     'tableauserverclient',
 ]
 telegram = [
-    'python-telegram-bot>=13.0',
+    'python-telegram-bot~=13.0',
 ]
 trino = [
     'trino>=0.301.0',
@@ -546,53 +509,23 @@ webhdfs = [
     'hdfs[avro,dataframe,kerberos]>=2.0.4',
 ]
 winrm = [
-    'pywinrm>=0.4',
+    'pywinrm~=0.4',
 ]
 yandex = [
     'yandexcloud>=0.122.0',
 ]
 zendesk = [
-    'zenpy>=2.0.24',
+    'zdesk',
 ]
 # End dependencies group
 
-# Mypy 0.900 and above ships only with stubs from stdlib so if we need other stubs, we need to install them
-# manually as `types-*`. See https://mypy.readthedocs.io/en/stable/running_mypy.html#missing-imports
-# for details. Wy want to install them explicitly because we want to eventually move to
-# mypyd which does not support installing the types dynamically with --install-types
-mypy_dependencies = [
-    # TODO: upgrade to newer versions of MyPy continuously as they are released
-    'mypy==0.910',
-    'types-boto',
-    'types-certifi',
-    'types-croniter',
-    'types-Deprecated',
-    'types-docutils',
-    'types-freezegun',
-    'types-paramiko',
-    'types-protobuf',
-    'types-python-dateutil',
-    'types-python-slugify',
-    'types-pytz',
-    'types-redis',
-    'types-requests',
-    'types-setuptools',
-    'types-termcolor',
-    'types-tabulate',
-    'types-toml',
-    'types-Markdown',
-    'types-PyMySQL',
-    'types-PyYAML',
-]
-
-# Dependencies needed for development only
 devel_only = [
     'aws_xray_sdk',
-    'beautifulsoup4>=4.7.1',
+    'beautifulsoup4~=4.7.1',
     'black',
     'blinker',
     'bowler',
-    'click>=8.0',
+    'click>=7.1,<9',
     'coverage',
     'filelock',
     'flake8>=3.6.0',
@@ -605,9 +538,8 @@ devel_only = [
     'jira',
     'jsondiff',
     'mongomock',
-    # Moto3 is limited for unknown reason
-    # TODO: attempt to remove the limitation
-    'moto~=2.2,>=2.2.12',
+    'moto~=2.2, >=2.2.12',
+    'mypy==0.770',
     'parameterized',
     'paramiko',
     'pipdeptree',
@@ -615,16 +547,10 @@ devel_only = [
     'pypsrp',
     'pygithub',
     'pysftp',
-    # Pytest 7 has been released in February 2022 and we should attempt to upgrade and remove the limit
-    # It contains a number of potential breaking changes but none of them looks breaking our use
-    # https://docs.pytest.org/en/latest/changelog.html#pytest-7-0-0-2022-02-03
-    # TODO: upgrade it and remove the limit
     'pytest~=6.0',
     'pytest-asyncio',
     'pytest-cov',
     'pytest-instafail',
-    # We should attempt to remove the limit when we upgrade Pytest
-    # TODO: remove the limit when we upgrade pytest
     'pytest-rerunfailures~=9.1',
     'pytest-timeouts',
     'pytest-xdist',
@@ -633,14 +559,13 @@ devel_only = [
     'qds-sdk>=1.9.6',
     'pytest-httpx',
     'requests_mock',
-    'rich_click',
     'semver',
     'twine',
     'wheel',
     'yamllint',
 ]
 
-devel = cgroups + devel_only + doc + kubernetes + mypy_dependencies + mysql + pandas + password
+devel = cgroups + devel_only + doc + kubernetes + mysql + pandas + password
 devel_hadoop = devel + hdfs + hive + kerberos + presto + webhdfs
 
 # Dict of all providers which are part of the Apache Airflow repository together with their requirements
@@ -673,7 +598,6 @@ PROVIDERS_REQUIREMENTS: Dict[str, List[str]] = {
     'exasol': exasol,
     'facebook': facebook,
     'ftp': [],
-    'github': github,
     'google': google,
     'grpc': grpc,
     'hashicorp': hashicorp,
@@ -692,7 +616,7 @@ PROVIDERS_REQUIREMENTS: Dict[str, List[str]] = {
     'neo4j': neo4j,
     'odbc': odbc,
     'openfaas': [],
-    'opsgenie': opsgenie,
+    'opsgenie': http_provider,
     'oracle': oracle,
     'pagerduty': pagerduty,
     'papermill': papermill,
@@ -920,7 +844,7 @@ EXTRAS_REQUIREMENTS["devel_ci"] = devel_ci
 
 def sort_extras_requirements() -> Dict[str, List[str]]:
     """
-    The dictionary order remains when keys() are retrieved.
+    For Python 3.6+ the dictionary order remains when keys() are retrieved.
     Sort both: extras and list of dependencies to make it easier to analyse problems
     external packages will be first, then if providers are added they are added at the end of the lists.
     """
@@ -975,10 +899,6 @@ def get_all_provider_packages() -> str:
 
 class AirflowDistribution(Distribution):
     """The setuptools.Distribution subclass with Airflow specific behaviour"""
-
-    def __init__(self, attrs=None):
-        super().__init__(attrs)
-        self.install_requires = None
 
     def parse_config_files(self, *args, **kwargs) -> None:
         """
@@ -1076,7 +996,7 @@ def add_all_provider_packages() -> None:
 class Develop(develop_orig):
     """Forces removal of providers in editable mode."""
 
-    def run(self) -> None:  # type: ignore
+    def run(self) -> None:
         self.announce('Installing in editable mode. Uninstalling provider packages!', level=log.INFO)
         # We need to run "python3 -m pip" because it might be that older PIP binary is in the path
         # And it results with an error when running pip directly (cannot import pip module)
@@ -1139,11 +1059,11 @@ def do_setup() -> None:
             'extra_clean': CleanCommand,
             'compile_assets': CompileAssets,
             'list_extras': ListExtras,
-            'install': Install,  # type: ignore
+            'install': Install,
             'develop': Develop,
         },
         test_suite='setup.airflow_test_suite',
-        **setup_kwargs,  # type: ignore
+        **setup_kwargs,
     )
 
 

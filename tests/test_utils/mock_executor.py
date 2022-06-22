@@ -17,7 +17,6 @@
 # under the License.
 
 from collections import defaultdict
-from unittest.mock import MagicMock
 
 from airflow.executors.base_executor import BaseExecutor
 from airflow.models.taskinstance import TaskInstanceKey
@@ -33,7 +32,6 @@ class MockExecutor(BaseExecutor):
     def __init__(self, do_update=True, *args, **kwargs):
         self.do_update = do_update
         self._running = []
-        self.callback_sink = MagicMock()
 
         # A list of "batches" of tasks
         self.history = []
@@ -61,10 +59,10 @@ class MockExecutor(BaseExecutor):
             # for tests!
             def sort_by(item):
                 key, val = item
-                (dag_id, task_id, date, try_number, map_index) = key
+                (dag_id, task_id, date, try_number) = key
                 (_, prio, _, _) = val
                 # Sort by priority (DESC), then date,task, try
-                return -prio, date, dag_id, task_id, map_index, try_number
+                return -prio, date, dag_id, task_id, try_number
 
             open_slots = self.parallelism - len(self.running)
             sorted_queue = sorted(self.queued_tasks.items(), key=sort_by)

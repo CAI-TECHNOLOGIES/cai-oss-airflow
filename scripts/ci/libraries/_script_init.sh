@@ -35,8 +35,6 @@ initialization::create_directories
 
 initialization::initialize_common_environment
 
-initialization::check_docker_version
-
 sanity_checks::basic_sanity_checks
 
 start_end::script_start

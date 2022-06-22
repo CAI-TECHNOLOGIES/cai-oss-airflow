@@ -54,8 +54,8 @@ TABLE_REFERENCE_REPR = {
 TABLE_REFERENCE = TableReference.from_api_repr(TABLE_REFERENCE_REPR)
 
 
-class _BigQueryBaseTestClass:
-    def setup_method(self) -> None:
+class _BigQueryBaseTestClass(unittest.TestCase):
+    def setUp(self) -> None:
         class MockedBigQueryHook(BigQueryHook):
             def _get_credentials_and_project_id(self):
                 return CREDENTIALS, PROJECT_ID
@@ -172,7 +172,7 @@ class TestBigQueryHookMethods(_BigQueryBaseTestClass):
         with pytest.raises(
             Exception,
             match=(
-                r"\['THIS IS NOT VALID'\] contains invalid schema update options. "
+                r"\['THIS IS NOT VALID'\] contains invalid schema update options."
                 r"Please only use one or more of the following options: "
                 r"\['ALLOW_FIELD_ADDITION', 'ALLOW_FIELD_RELAXATION'\]"
             ),
@@ -898,10 +898,9 @@ class TestBigQueryHookMethods(_BigQueryBaseTestClass):
         _, kwargs = mock_insert.call_args
         assert kwargs["configuration"]['labels'] == {'label1': 'test1', 'label2': 'test2'}
 
-    @pytest.mark.parametrize('nowait', [True, False])
     @mock.patch("airflow.providers.google.cloud.hooks.bigquery.QueryJob")
     @mock.patch("airflow.providers.google.cloud.hooks.bigquery.BigQueryHook.get_client")
-    def test_insert_job(self, mock_client, mock_query_job, nowait):
+    def test_insert_job(self, mock_client, mock_query_job):
         job_conf = {
             "query": {
                 "query": "SELECT * FROM test",
@@ -911,7 +910,10 @@ class TestBigQueryHookMethods(_BigQueryBaseTestClass):
         mock_query_job._JOB_TYPE = "query"
 
         self.hook.insert_job(
-            configuration=job_conf, job_id=JOB_ID, project_id=PROJECT_ID, location=LOCATION, nowait=nowait
+            configuration=job_conf,
+            job_id=JOB_ID,
+            project_id=PROJECT_ID,
+            location=LOCATION,
         )
 
         mock_client.assert_called_once_with(
@@ -926,25 +928,7 @@ class TestBigQueryHookMethods(_BigQueryBaseTestClass):
             },
             mock_client.return_value,
         )
-        if nowait:
-            mock_query_job.from_api_repr.return_value._begin.assert_called_once()
-            mock_query_job.from_api_repr.return_value.result.assert_not_called()
-        else:
-            mock_query_job.from_api_repr.return_value._begin.assert_not_called()
-            mock_query_job.from_api_repr.return_value.result.assert_called_once()
-
-    def test_dbapi_get_uri(self):
-        assert self.hook.get_uri().startswith('bigquery://')
-
-    def test_dbapi_get_sqlalchemy_engine_failed(self):
-        with pytest.raises(
-            AirflowException,
-            match="For now, we only support instantiating SQLAlchemy engine by"
-            " using ADC"
-            ", extra__google_cloud_platform__key_path"
-            "and extra__google_cloud_platform__keyfile_dict",
-        ):
-            self.hook.get_sqlalchemy_engine()
+        mock_query_job.from_api_repr.return_value.result.assert_called_once_with()
 
 
 class TestBigQueryTableSplitter(unittest.TestCase):
@@ -2017,7 +2001,7 @@ class TestBigQueryWithLabelsAndDescription(_BigQueryBaseTestClass):
         )
 
         _, kwargs = mock_create.call_args
-        assert kwargs['table_resource']['labels'] == labels
+        self.assertDictEqual(kwargs['table_resource']['labels'], labels)
 
     @mock.patch("airflow.providers.google.cloud.hooks.bigquery.BigQueryHook.create_empty_table")
     def test_create_external_table_description(self, mock_create):

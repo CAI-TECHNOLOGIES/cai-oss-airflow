@@ -25,6 +25,8 @@ import pytest
 from airflow.decorators import task
 from airflow.utils import timezone
 
+from .test_python import TestPythonBase
+
 DEFAULT_DATE = timezone.datetime(2016, 1, 1)
 END_DATE = timezone.datetime(2016, 1, 2)
 INTERVAL = timedelta(hours=12)
@@ -41,31 +43,30 @@ TI_CONTEXT_ENV_VARS = [
 PYTHON_VERSION = sys.version_info[0]
 
 
-class TestPythonVirtualenvDecorator:
-    def test_add_dill(self, dag_maker):
+class TestPythonVirtualenvDecorator(TestPythonBase):
+    def test_add_dill(self):
         @task.virtualenv(use_dill=True, system_site_packages=False)
         def f():
-            """Ensure dill is correctly installed."""
-            import dill  # noqa: F401
+            pass
 
-        with dag_maker():
+        with self.dag:
             ret = f()
 
-        ret.operator.run(start_date=DEFAULT_DATE, end_date=DEFAULT_DATE)
+        assert 'dill' in ret.operator.requirements
 
-    def test_no_requirements(self, dag_maker):
+    def test_no_requirements(self):
         """Tests that the python callable is invoked on task run."""
 
         @task.virtualenv()
         def f():
             pass
 
-        with dag_maker():
+        with self.dag:
             ret = f()
 
         ret.operator.run(start_date=DEFAULT_DATE, end_date=DEFAULT_DATE)
 
-    def test_no_system_site_packages(self, dag_maker):
+    def test_no_system_site_packages(self):
         @task.virtualenv(system_site_packages=False, python_version=PYTHON_VERSION, use_dill=True)
         def f():
             try:
@@ -74,12 +75,12 @@ class TestPythonVirtualenvDecorator:
                 return True
             raise Exception
 
-        with dag_maker():
+        with self.dag:
             ret = f()
 
         ret.operator.run(start_date=DEFAULT_DATE, end_date=DEFAULT_DATE)
 
-    def test_system_site_packages(self, dag_maker):
+    def test_system_site_packages(self):
         @task.virtualenv(
             system_site_packages=False,
             requirements=['funcsigs'],
@@ -89,12 +90,12 @@ class TestPythonVirtualenvDecorator:
         def f():
             import funcsigs  # noqa: F401
 
-        with dag_maker():
+        with self.dag:
             ret = f()
 
         ret.operator.run(start_date=DEFAULT_DATE, end_date=DEFAULT_DATE)
 
-    def test_with_requirements_pinned(self, dag_maker):
+    def test_with_requirements_pinned(self):
         @task.virtualenv(
             system_site_packages=False,
             requirements=['funcsigs==0.4'],
@@ -107,12 +108,12 @@ class TestPythonVirtualenvDecorator:
             if funcsigs.__version__ != '0.4':
                 raise Exception
 
-        with dag_maker():
+        with self.dag:
             ret = f()
 
         ret.operator.run(start_date=DEFAULT_DATE, end_date=DEFAULT_DATE)
 
-    def test_unpinned_requirements(self, dag_maker):
+    def test_unpinned_requirements(self):
         @task.virtualenv(
             system_site_packages=False,
             requirements=['funcsigs', 'dill'],
@@ -122,23 +123,44 @@ class TestPythonVirtualenvDecorator:
         def f():
             import funcsigs  # noqa: F401
 
-        with dag_maker():
+        with self.dag:
             ret = f()
 
         ret.operator.run(start_date=DEFAULT_DATE, end_date=DEFAULT_DATE)
 
-    def test_fail(self, dag_maker):
+    def test_fail(self):
         @task.virtualenv()
         def f():
             raise Exception
 
-        with dag_maker():
+        with self.dag:
             ret = f()
 
         with pytest.raises(CalledProcessError):
             ret.operator.run(start_date=DEFAULT_DATE, end_date=DEFAULT_DATE)
 
-    def test_python_3(self, dag_maker):
+    def test_python_2(self):
+        @task.virtualenv(python_version=2, requirements=['dill'])
+        def f():
+            {}.iteritems()
+
+        with self.dag:
+            ret = f()
+
+        ret.operator.run(start_date=DEFAULT_DATE, end_date=DEFAULT_DATE)
+
+    def test_python_2_7(self):
+        @task.virtualenv(python_version='2.7', requirements=['dill'])
+        def f():
+            {}.iteritems()
+            return True
+
+        with self.dag:
+            ret = f()
+
+        ret.operator.run(start_date=DEFAULT_DATE, end_date=DEFAULT_DATE)
+
+    def test_python_3(self):
         @task.virtualenv(python_version=3, use_dill=False, requirements=['dill'])
         def f():
             import sys
@@ -150,12 +172,32 @@ class TestPythonVirtualenvDecorator:
                 return
             raise Exception
 
-        with dag_maker():
+        with self.dag:
             ret = f()
 
         ret.operator.run(start_date=DEFAULT_DATE, end_date=DEFAULT_DATE)
 
-    def test_with_args(self, dag_maker):
+    @staticmethod
+    def _invert_python_major_version():
+        if sys.version_info[0] == 2:
+            return 3
+        else:
+            return 2
+
+    def test_string_args(self):
+        @task.virtualenv(python_version=self._invert_python_major_version(), string_args=[1, 2, 1])
+        def f():
+            global virtualenv_string_args
+            print(virtualenv_string_args)
+            if virtualenv_string_args[0] != virtualenv_string_args[2]:
+                raise Exception
+
+        with self.dag:
+            ret = f()
+
+        ret.operator.run(start_date=DEFAULT_DATE, end_date=DEFAULT_DATE)
+
+    def test_with_args(self):
         @task.virtualenv
         def f(a, b, c=False, d=False):
             if a == 0 and b == 1 and c and not d:
@@ -163,27 +205,27 @@ class TestPythonVirtualenvDecorator:
             else:
                 raise Exception
 
-        with dag_maker():
+        with self.dag:
             ret = f(0, 1, c=True)
 
         ret.operator.run(start_date=DEFAULT_DATE, end_date=DEFAULT_DATE)
 
-    def test_return_none(self, dag_maker):
+    def test_return_none(self):
         @task.virtualenv
         def f():
             return None
 
-        with dag_maker():
+        with self.dag:
             ret = f()
 
         ret.operator.run(start_date=DEFAULT_DATE, end_date=DEFAULT_DATE)
 
-    def test_nonimported_as_arg(self, dag_maker):
+    def test_nonimported_as_arg(self):
         @task.virtualenv
         def f(_):
             return None
 
-        with dag_maker():
+        with self.dag:
             ret = f(datetime.datetime.utcnow())
 
         ret.operator.run(start_date=DEFAULT_DATE, end_date=DEFAULT_DATE)

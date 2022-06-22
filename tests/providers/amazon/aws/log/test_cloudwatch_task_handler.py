@@ -26,7 +26,7 @@ from watchtower import CloudWatchLogHandler
 from airflow.models import DAG, DagRun, TaskInstance
 from airflow.operators.dummy import DummyOperator
 from airflow.providers.amazon.aws.hooks.logs import AwsLogsHook
-from airflow.providers.amazon.aws.log.cloudwatch_task_handler import CloudwatchTaskHandler
+from airflow.utils.log.cloudwatch_task_handler import CloudwatchTaskHandler
 from airflow.utils.state import State
 from airflow.utils.timezone import datetime
 from tests.test_utils.config import conf_vars
@@ -71,9 +71,9 @@ class TestCloudwatchTaskHandler(unittest.TestCase):
         self.ti.try_number = 1
         self.ti.state = State.RUNNING
 
-        self.remote_log_stream = f'{dag_id}/{task_id}/{date.isoformat()}/{self.ti.try_number}.log'.replace(
-            ':', '_'
-        )
+        self.remote_log_stream = '{}/{}/{}/{}.log'.format(
+            dag_id, task_id, date.isoformat(), self.ti.try_number
+        ).replace(':', '_')
 
         moto.core.moto_api_backend.reset()
         self.conn = boto3.client('logs', region_name=self.region_name)
@@ -179,9 +179,8 @@ class TestCloudwatchTaskHandler(unittest.TestCase):
         )
 
         msg_template = '*** Reading remote log from Cloudwatch log_group: {} log_stream: {}.\n{}\n'
-        error_msg = (
-            'Could not read remote logs from log_group: '
-            f'{self.remote_log_group} log_stream: {self.remote_log_stream}.'
+        error_msg = 'Could not read remote logs from log_group: {} log_stream: {}.'.format(
+            self.remote_log_group, self.remote_log_stream
         )
         assert self.cloudwatch_task_handler.read(self.ti) == (
             [[('', msg_template.format(self.remote_log_group, self.remote_log_stream, error_msg))]],
@@ -201,9 +200,8 @@ class TestCloudwatchTaskHandler(unittest.TestCase):
         )
 
         msg_template = '*** Reading remote log from Cloudwatch log_group: {} log_stream: {}.\n{}\n'
-        error_msg = (
-            f'Could not read remote logs from log_group: '
-            f'{self.remote_log_group} log_stream: {self.remote_log_stream}.'
+        error_msg = 'Could not read remote logs from log_group: {} log_stream: {}.'.format(
+            self.remote_log_group, self.remote_log_stream
         )
         assert self.cloudwatch_task_handler.read(self.ti) == (
             [[('', msg_template.format(self.remote_log_group, self.remote_log_stream, error_msg))]],

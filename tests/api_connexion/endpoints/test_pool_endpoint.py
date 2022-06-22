@@ -79,7 +79,6 @@ class TestGetPools(TestBasePoolEndpoints):
                     "running_slots": 0,
                     "queued_slots": 0,
                     "open_slots": 128,
-                    "description": "Default pool",
                 },
                 {
                     "name": "test_pool_a",
@@ -88,7 +87,6 @@ class TestGetPools(TestBasePoolEndpoints):
                     "running_slots": 0,
                     "queued_slots": 0,
                     "open_slots": 3,
-                    "description": None,
                 },
             ],
             "total_entries": 2,
@@ -111,7 +109,6 @@ class TestGetPools(TestBasePoolEndpoints):
                     "running_slots": 0,
                     "queued_slots": 0,
                     "open_slots": 3,
-                    "description": None,
                 },
                 {
                     "name": "default_pool",
@@ -120,7 +117,6 @@ class TestGetPools(TestBasePoolEndpoints):
                     "running_slots": 0,
                     "queued_slots": 0,
                     "open_slots": 128,
-                    "description": "Default pool",
                 },
             ],
             "total_entries": 2,
@@ -218,7 +214,6 @@ class TestGetPool(TestBasePoolEndpoints):
             "running_slots": 0,
             "queued_slots": 0,
             "open_slots": 3,
-            "description": None,
         } == response.json
 
     def test_response_404(self):
@@ -279,7 +274,7 @@ class TestPostPool(TestBasePoolEndpoints):
     def test_response_200(self):
         response = self.client.post(
             "api/v1/pools",
-            json={"name": "test_pool_a", "slots": 3, "description": "test pool"},
+            json={"name": "test_pool_a", "slots": 3},
             environ_overrides={'REMOTE_USER': "test"},
         )
         assert response.status_code == 200
@@ -290,7 +285,6 @@ class TestPostPool(TestBasePoolEndpoints):
             "running_slots": 0,
             "queued_slots": 0,
             "open_slots": 3,
-            "description": "test pool",
         } == response.json
 
     def test_response_409(self, session):
@@ -372,7 +366,6 @@ class TestPatchPool(TestBasePoolEndpoints):
             "open_slots": 3,
             "running_slots": 0,
             "slots": 3,
-            "description": None,
         } == response.json
 
     @parameterized.expand(
@@ -466,7 +459,6 @@ class TestModifyDefaultPool(TestBasePoolEndpoints):
                     "open_slots": 3,
                     "running_slots": 0,
                     "slots": 3,
-                    "description": "Default pool",
                 },
             ),
             (
@@ -481,17 +473,13 @@ class TestModifyDefaultPool(TestBasePoolEndpoints):
                     "open_slots": 3,
                     "running_slots": 0,
                     "slots": 3,
-                    "description": "Default pool",
                 },
             ),
             (
                 "200 no update mask",
                 200,
                 "api/v1/pools/default_pool",
-                {
-                    "name": "default_pool",
-                    "slots": 3,
-                },
+                {"name": "default_pool", "slots": 3},
                 {
                     "occupied_slots": 0,
                     "queued_slots": 0,
@@ -499,7 +487,6 @@ class TestModifyDefaultPool(TestBasePoolEndpoints):
                     "open_slots": 3,
                     "running_slots": 0,
                     "slots": 3,
-                    "description": "Default pool",
                 },
             ),
         ]
@@ -554,7 +541,6 @@ class TestPatchPoolWithUpdateMask(TestBasePoolEndpoints):
             "running_slots": 0,
             "queued_slots": 0,
             "open_slots": expected_slots,
-            "description": None,
         } == response.json
 
     @parameterized.expand(

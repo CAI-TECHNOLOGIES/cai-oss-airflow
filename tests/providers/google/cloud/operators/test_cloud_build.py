@@ -72,7 +72,7 @@ class TestCloudBuildOperator(TestCase):
         operator.execute(context=None)
         mock_hook.assert_called_once_with(gcp_conn_id=GCP_CONN_ID, impersonation_chain=None)
         mock_hook.return_value.cancel_build.assert_called_once_with(
-            id_=TRIGGER_ID, project_id=None, retry=None, timeout=None, metadata=()
+            id_=TRIGGER_ID, project_id=None, retry=None, timeout=None, metadata=None
         )
 
     @mock.patch("airflow.providers.google.cloud.operators.cloud_build.CloudBuildHook")
@@ -83,7 +83,7 @@ class TestCloudBuildOperator(TestCase):
         mock_hook.assert_called_once_with(gcp_conn_id=GCP_CONN_ID, impersonation_chain=None)
         build = Build(BUILD)
         mock_hook.return_value.create_build.assert_called_once_with(
-            build=build, project_id=None, wait=True, retry=None, timeout=None, metadata=()
+            build=build, project_id=None, wait=True, retry=None, timeout=None, metadata=None
         )
 
     @mock.patch("airflow.providers.google.cloud.operators.cloud_build.CloudBuildHook")
@@ -94,15 +94,13 @@ class TestCloudBuildOperator(TestCase):
         mock_hook.assert_called_once_with(gcp_conn_id=GCP_CONN_ID, impersonation_chain=None)
         build = Build(BUILD)
         mock_hook.return_value.create_build.assert_called_once_with(
-            build=build, project_id=None, wait=True, retry=None, timeout=None, metadata=()
+            build=build, project_id=None, wait=True, retry=None, timeout=None, metadata=None
         )
 
     @mock.patch("airflow.providers.google.cloud.operators.cloud_build.CloudBuildHook")
     def test_create_build_with_body_and_build(self, mock_hook):
         mock_hook.return_value.create_build.return_value = Build()
-        with pytest.raises(
-            AirflowException, match="You should not pass both build or body parameters. Both are set."
-        ):
+        with pytest.raises(AirflowException, match="Either build or body should be passed."):
             CloudBuildCreateBuildOperator(build=BUILD, body=BUILD, task_id="id")
 
     @parameterized.expand(
@@ -140,7 +138,7 @@ class TestCloudBuildOperator(TestCase):
         operator.execute(context=None)
         mock_hook.assert_called_once_with(gcp_conn_id=GCP_CONN_ID, impersonation_chain=None)
         mock_hook.return_value.create_build_trigger.assert_called_once_with(
-            trigger=BUILD_TRIGGER, project_id=None, retry=None, timeout=None, metadata=()
+            trigger=BUILD_TRIGGER, project_id=None, retry=None, timeout=None, metadata=None
         )
 
     @mock.patch("airflow.providers.google.cloud.operators.cloud_build.CloudBuildHook")
@@ -150,7 +148,7 @@ class TestCloudBuildOperator(TestCase):
         operator.execute(context=None)
         mock_hook.assert_called_once_with(gcp_conn_id=GCP_CONN_ID, impersonation_chain=None)
         mock_hook.return_value.delete_build_trigger.assert_called_once_with(
-            trigger_id=TRIGGER_ID, project_id=None, retry=None, timeout=None, metadata=()
+            trigger_id=TRIGGER_ID, project_id=None, retry=None, timeout=None, metadata=None
         )
 
     @mock.patch("airflow.providers.google.cloud.operators.cloud_build.CloudBuildHook")
@@ -160,7 +158,7 @@ class TestCloudBuildOperator(TestCase):
         operator.execute(context=None)
         mock_hook.assert_called_once_with(gcp_conn_id=GCP_CONN_ID, impersonation_chain=None)
         mock_hook.return_value.get_build.assert_called_once_with(
-            id_=BUILD_ID, project_id=None, retry=None, timeout=None, metadata=()
+            id_=BUILD_ID, project_id=None, retry=None, timeout=None, metadata=None
         )
 
     @mock.patch("airflow.providers.google.cloud.operators.cloud_build.CloudBuildHook")
@@ -170,7 +168,7 @@ class TestCloudBuildOperator(TestCase):
         operator.execute(context=None)
         mock_hook.assert_called_once_with(gcp_conn_id=GCP_CONN_ID, impersonation_chain=None)
         mock_hook.return_value.get_build_trigger.assert_called_once_with(
-            trigger_id=TRIGGER_ID, project_id=None, retry=None, timeout=None, metadata=()
+            trigger_id=TRIGGER_ID, project_id=None, retry=None, timeout=None, metadata=None
         )
 
     @mock.patch("airflow.providers.google.cloud.operators.cloud_build.CloudBuildHook")
@@ -186,7 +184,7 @@ class TestCloudBuildOperator(TestCase):
             page_token=None,
             retry=None,
             timeout=None,
-            metadata=(),
+            metadata=None,
         )
 
     @mock.patch("airflow.providers.google.cloud.operators.cloud_build.CloudBuildHook")
@@ -202,7 +200,7 @@ class TestCloudBuildOperator(TestCase):
             filter_=None,
             retry=None,
             timeout=None,
-            metadata=(),
+            metadata=None,
         )
 
     @mock.patch("airflow.providers.google.cloud.operators.cloud_build.CloudBuildHook")
@@ -212,7 +210,7 @@ class TestCloudBuildOperator(TestCase):
         operator.execute(context=None)
         mock_hook.assert_called_once_with(gcp_conn_id=GCP_CONN_ID, impersonation_chain=None)
         mock_hook.return_value.retry_build.assert_called_once_with(
-            id_=BUILD_ID, project_id=None, wait=True, retry=None, timeout=None, metadata=()
+            id_=BUILD_ID, project_id=None, wait=True, retry=None, timeout=None, metadata=None
         )
 
     @mock.patch("airflow.providers.google.cloud.operators.cloud_build.CloudBuildHook")
@@ -228,7 +226,7 @@ class TestCloudBuildOperator(TestCase):
             wait=True,
             retry=None,
             timeout=None,
-            metadata=(),
+            metadata=None,
         )
 
     @mock.patch("airflow.providers.google.cloud.operators.cloud_build.CloudBuildHook")
@@ -245,7 +243,7 @@ class TestCloudBuildOperator(TestCase):
             project_id=None,
             retry=None,
             timeout=None,
-            metadata=(),
+            metadata=None,
         )
 
 
