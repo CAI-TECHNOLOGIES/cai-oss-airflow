@@ -81,6 +81,7 @@
     "glob-parent": ">=5.1.2",
     "ssri": ">= 8.0.1",
     "jquery": ">=3.5.0",
-    "browserslist": ">=4.16.5"
+    "browserslist": ">=4.16.5",
+    "moment": ">=2.29.4"
   }
 }
