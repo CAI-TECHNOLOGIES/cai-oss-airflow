@@ -83,6 +83,7 @@
     "browserslist": ">=4.16.5",
     "moment": ">=2.29.4",
     "bootstrap": ">=4.1.2",
-    "moment-timezone": "^0.5.37"
+    "moment-timezone": "^0.5.37",
+    "d3-color": ">=3.1.0"
   }
 }
