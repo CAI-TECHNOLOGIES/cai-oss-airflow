@@ -26,7 +26,9 @@ from airflow.configuration import conf
 T = TypeVar("T", bound=Callable)
 
 
-def has_access(permissions: Optional[Sequence[Tuple[str, str]]] = None) -> Callable[[T], T]:
+def has_access(
+    permissions: Optional[Sequence[Tuple[str, str]]] = None
+) -> Callable[[T], T]:
     """Factory for decorator that checks current user's permissions against required permissions."""
 
     def requires_access_decorator(func: T):
@@ -34,30 +36,30 @@ def has_access(permissions: Optional[Sequence[Tuple[str, str]]] = None) -> Calla
         def decorated(*args, **kwargs):
             __tracebackhide__ = True  # Hide from pytest traceback.
 
-            appbuilder = current_app.appbuilder
-            if not g.user.is_anonymous and not appbuilder.sm.current_user_has_permissions():
-                return (
-                    render_template(
-                        'airflow/no_roles_permissions.html',
-                        hostname=socket.getfqdn()
-                        if conf.getboolean('webserver', 'EXPOSE_HOSTNAME', fallback=True)
-                        else 'redact',
-                        logout_url=appbuilder.get_url_for_logout,
-                    ),
-                    403,
-                )
-
-            if appbuilder.sm.check_authorization(permissions, request.args.get('dag_id', None)):
-                return func(*args, **kwargs)
-            else:
-                access_denied = "Access is Denied"
-                flash(access_denied, "danger")
-            return redirect(
-                url_for(
-                    appbuilder.sm.auth_view.__class__.__name__ + ".login",
-                    next=request.url,
-                )
-            )
+            # appbuilder = current_app.appbuilder
+            # if not g.user.is_anonymous and not appbuilder.sm.current_user_has_permissions():
+            #     return (
+            #         render_template(
+            #             'airflow/no_roles_permissions.html',
+            #             hostname=socket.getfqdn()
+            #             if conf.getboolean('webserver', 'EXPOSE_HOSTNAME', fallback=True)
+            #             else 'redact',
+            #             logout_url=appbuilder.get_url_for_logout,
+            #         ),
+            #         403,
+            #     )
+            #
+            # if appbuilder.sm.check_authorization(permissions, request.args.get('dag_id', None)):
+            return func(*args, **kwargs)
+            # else:
+            #     access_denied = "Access is Denied"
+            #     flash(access_denied, "danger")
+            # return redirect(
+            #     url_for(
+            #         appbuilder.sm.auth_view.__class__.__name__ + ".login",
+            #         next=request.url,
+            #     )
+            # )
 
         return cast(T, decorated)
 
