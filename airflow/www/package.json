@@ -65,7 +65,7 @@
     "datatables.net": "^1.12.1",
     "datatables.net-bs": "^1.10.23",
     "eonasdan-bootstrap-datetimepicker": "^4.17.49",
-    "jquery": ">=3.5.0",
+    "jquery": ">=3.7.0",
     "jshint": "^2.13.5",
     "nvd3": "^1.8.6",
     "redoc": "^2.0.0-rc.72",
