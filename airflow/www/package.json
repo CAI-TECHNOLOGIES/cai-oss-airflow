@@ -69,7 +69,7 @@
     "jshint": "^2.13.5",
     "nvd3": "^1.8.6",
     "redoc": "^2.0.0-rc.72",
-    "url-search-params-polyfill": "^8.1.0"
+    "url-search-params-polyfill": "^8.2.0"
   },
   "resolutions": {
     "lodash": "^4.17.21",
